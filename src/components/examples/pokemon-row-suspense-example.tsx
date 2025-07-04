@@ -21,6 +21,7 @@ interface Pokemon {
     speed: number;
   };
   isLoading?: boolean;
+  url?: string; // Added for PokeAPI reference
 }
 
 interface PokemonDetailResponse {
@@ -45,15 +46,44 @@ interface PokemonDetailResponse {
   }>;
 }
 
+// PokeAPI list response type
+interface PokemonListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Array<{
+    name: string;
+    url: string;
+  }>;
+}
+
 // Cache for individual Pokemon
-const pokemonRowCache = new Map<number, Promise<Pokemon>>();
+const pokemonRowCache = new Map<string, Promise<Pokemon>>();
+
+/**
+ * Fetch Pokemon list with pagination from PokeAPI
+ */
+const fetchPokemonList = async (
+  limit: number = 20,
+  offset: number = 0,
+): Promise<PokemonListResponse> => {
+  const response = await fetch(
+    `https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Pokemon list: ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 /**
  * Fetch individual Pokemon data for row-level suspense
  */
-const fetchPokemonById = async (id: number): Promise<Pokemon> => {
-  if (pokemonRowCache.has(id)) {
-    return pokemonRowCache.get(id)!;
+const fetchPokemonByUrl = async (url: string): Promise<Pokemon> => {
+  if (pokemonRowCache.has(url)) {
+    return pokemonRowCache.get(url)!;
   }
 
   const promise = (async () => {
@@ -62,10 +92,10 @@ const fetchPokemonById = async (id: number): Promise<Pokemon> => {
       setTimeout(resolve, Math.random() * 2000 + 500),
     );
 
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+    const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Pokemon #${id}`);
+      throw new Error(`Failed to fetch Pokemon from ${url}`);
     }
 
     const detail: PokemonDetailResponse = await response.json();
@@ -89,10 +119,11 @@ const fetchPokemonById = async (id: number): Promise<Pokemon> => {
         speed:
           detail.stats.find((s) => s.stat.name === "speed")?.base_stat || 0,
       },
+      url,
     } as Pokemon;
   })();
 
-  pokemonRowCache.set(id, promise);
+  pokemonRowCache.set(url, promise);
   return promise;
 };
 
@@ -124,9 +155,9 @@ const getTypeColor = (type: string): string => {
 /**
  * Placeholder Pokemon for skeleton loading
  */
-const createSkeletonPokemon = (id: number): Pokemon => ({
-  id,
-  name: `Loading Pokemon #${id}...`,
+const createSkeletonPokemon = (name: string, url: string): Pokemon => ({
+  id: 0,
+  name: `Loading ${name}...`,
   height: 0,
   weight: 0,
   types: ["unknown"],
@@ -141,37 +172,61 @@ const createSkeletonPokemon = (id: number): Pokemon => ({
     speed: 0,
   },
   isLoading: true,
+  url,
 });
 
 /**
- * Main Pokemon Row Suspense Example Component using Table
+ * Main Pokemon Row Suspense Example Component using Table with PokeAPI pagination
  */
 export const PokemonRowSuspenseExample = () => {
-  const [pokemonCount, setPokemonCount] = useState(10);
   const [showShiny, setShowShiny] = useState(false);
   const [key, setKey] = useState(0);
   const [pokemonData, setPokemonData] = useState<Pokemon[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [loading, setLoading] = useState(false);
 
-  // Initialize with skeleton data
+  // Load Pokemon list and individual Pokemon data
   useEffect(() => {
-    const pokemonIds = Array.from({ length: pokemonCount }, (_, i) => i + 1);
-    const skeletonData = pokemonIds.map(createSkeletonPokemon);
-    setPokemonData(skeletonData);
-
-    // Load each Pokemon individually
-    pokemonIds.forEach(async (pokemonId, index) => {
+    const loadPokemonPage = async () => {
+      setLoading(true);
       try {
-        const pokemon = await fetchPokemonById(pokemonId);
-        setPokemonData((prev) => {
-          const newData = [...prev];
-          newData[index] = pokemon;
-          return newData;
+        // Calculate offset for current page
+        const offset = (currentPage - 1) * pageSize;
+
+        // Fetch Pokemon list from PokeAPI
+        const listResponse = await fetchPokemonList(pageSize, offset);
+        setTotalCount(listResponse.count);
+
+        // Create skeleton data first
+        const skeletonData = listResponse.results.map((pokemon) =>
+          createSkeletonPokemon(pokemon.name, pokemon.url),
+        );
+        setPokemonData(skeletonData);
+
+        // Load each Pokemon individually
+        listResponse.results.forEach(async (pokemonRef, index) => {
+          try {
+            const pokemon = await fetchPokemonByUrl(pokemonRef.url);
+            setPokemonData((prev) => {
+              const newData = [...prev];
+              newData[index] = pokemon;
+              return newData;
+            });
+          } catch (error) {
+            console.error(`Failed to load Pokemon ${pokemonRef.name}:`, error);
+          }
         });
       } catch (error) {
-        console.error(`Failed to load Pokemon #${pokemonId}:`, error);
+        console.error("Failed to load Pokemon list:", error);
+      } finally {
+        setLoading(false);
       }
-    });
-  }, [pokemonCount, key]);
+    };
+
+    loadPokemonPage();
+  }, [currentPage, pageSize, key]);
 
   // Define columns for the Pokemon table
   const pokemonColumns: TableColumn<Pokemon>[] = [
@@ -502,6 +557,17 @@ Speed: ${pokemon.stats.speed}
 Types: ${pokemon.types.join(", ")}`);
   };
 
+  // Handle page changes from Table component
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  // Handle page size changes from Table component
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page
+  };
+
   return (
     <div>
       <div
@@ -513,24 +579,6 @@ Types: ${pokemon.types.join(", ")}`);
           flexWrap: "wrap",
         }}
       >
-        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          Pokemon Count:
-          <select
-            value={pokemonCount}
-            onChange={(e) => setPokemonCount(Number(e.target.value))}
-            style={{
-              padding: "0.25rem 0.5rem",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-            }}
-          >
-            <option value={5}>5 Pokemon</option>
-            <option value={10}>10 Pokemon</option>
-            <option value={15}>15 Pokemon</option>
-            <option value={25}>25 Pokemon</option>
-          </select>
-        </label>
-
         <button
           onClick={handleRefresh}
           style={{
@@ -542,7 +590,7 @@ Types: ${pokemon.types.join(", ")}`);
             cursor: "pointer",
           }}
         >
-          🔄 Refresh All Rows
+          🔄 Refresh Current Page
         </button>
 
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -553,6 +601,10 @@ Types: ${pokemon.types.join(", ")}`);
           />
           ✨ Show Shiny Sprites
         </label>
+
+        <div style={{ fontSize: "14px", color: "#666" }}>
+          Total Pokemon: {totalCount.toLocaleString()}
+        </div>
       </div>
 
       <div
@@ -565,11 +617,12 @@ Types: ${pokemon.types.join(", ")}`);
           fontSize: "14px",
         }}
       >
-        <strong>🎭 Row-Level Suspense with Table Component:</strong> This uses
-        our reusable Table component with pagination and filtering! Each Pokemon
-        loads individually and updates the table row as data becomes available.
-        Navigate between pages to see different Pokemon loading, or search while
-        data is still loading!
+        <strong>🎭 PokeAPI Pagination with Row-Level Suspense:</strong> This now
+        uses the PokeAPI's official pagination system! Navigate through all{" "}
+        {totalCount.toLocaleString()} Pokemon using the pagination controls.
+        Each Pokemon loads individually with skeleton loading states. The Table
+        component handles pagination seamlessly with the PokeAPI's offset/limit
+        system.
       </div>
 
       <Table
@@ -579,15 +632,92 @@ Types: ${pokemon.types.join(", ")}`);
           sortable: true,
           pagination: {
             enabled: true,
-            pageSize: 5, // Show 5 Pokemon per page to see loading effect better
+            pageSize: pageSize,
           },
           filtering: {
-            enabled: true, // Enable filtering too - you can search while loading!
+            enabled: true, // Enable filtering - you can search while loading!
           },
         }}
         className="pokemon-table"
         onRowClick={handleRowClick}
       />
+
+      {/* Custom pagination controls that sync with PokeAPI */}
+      <div
+        style={{
+          marginTop: "1rem",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0.75rem",
+          backgroundColor: "#f8f9fa",
+          borderRadius: "8px",
+          fontSize: "14px",
+        }}
+      >
+        <div>
+          Page {currentPage} of {Math.ceil(totalCount / pageSize)} •{" "}
+          {totalCount.toLocaleString()} total Pokemon
+        </div>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1 || loading}
+            style={{
+              padding: "0.25rem 0.75rem",
+              backgroundColor:
+                currentPage <= 1 || loading ? "#e5e5e5" : "#3b82f6",
+              color: currentPage <= 1 || loading ? "#999" : "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: currentPage <= 1 || loading ? "not-allowed" : "pointer",
+            }}
+          >
+            Previous
+          </button>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            disabled={loading}
+            style={{
+              padding: "0.25rem 0.5rem",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              backgroundColor: loading ? "#f5f5f5" : "white",
+            }}
+          >
+            <option value={5}>5 per page</option>
+            <option value={10}>10 per page</option>
+            <option value={20}>20 per page</option>
+            <option value={50}>50 per page</option>
+          </select>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={
+              currentPage >= Math.ceil(totalCount / pageSize) || loading
+            }
+            style={{
+              padding: "0.25rem 0.75rem",
+              backgroundColor:
+                currentPage >= Math.ceil(totalCount / pageSize) || loading
+                  ? "#e5e5e5"
+                  : "#3b82f6",
+              color:
+                currentPage >= Math.ceil(totalCount / pageSize) || loading
+                  ? "#999"
+                  : "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor:
+                currentPage >= Math.ceil(totalCount / pageSize) || loading
+                  ? "not-allowed"
+                  : "pointer",
+            }}
+          >
+            Next
+          </button>
+        </div>
+      </div>
 
       <style>{`
         @keyframes pulse {
