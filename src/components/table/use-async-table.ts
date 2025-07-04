@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTable } from "./use-table";
-import type { TableConfig, UseTableReturn, TableSort } from "./types";
+import type { TableConfig, UseTableReturn, TableSort, DeepKeys } from "./types";
 
 /**
  * Result type for async operations following the Result pattern
@@ -15,7 +15,7 @@ type AsyncResult<T, E extends Error = Error> =
  * Configuration for async table operations
  * @template TData - The type of data objects in the table rows
  */
-interface AsyncTableConfig<TData extends object> {
+export interface AsyncTableConfig<TData extends object> {
   /**
    * Function to fetch data from the server
    * @param params - Request parameters including pagination, sorting, and search
@@ -50,6 +50,19 @@ interface AsyncTableConfig<TData extends object> {
     total?: number;
     /** Current page number (1-based) */
     page?: number;
+  };
+  /** Whether sorting is enabled */
+  sortable?: boolean;
+  /** Whether filtering is enabled */
+  /** Search and filtering configuration */
+  filtering?: {
+    /** Whether search functionality is enabled */
+    enabled: boolean;
+    /**
+     * Column keys that should be searchable
+     * If not provided, all columns will be searchable
+     */
+    searchableColumns?: DeepKeys<TData>[];
   };
 }
 
@@ -124,7 +137,6 @@ export const useAsyncTable = <TData extends object>(
     pagination: {
       enabled: true,
       pageSize: config.pagination?.pageSize ?? 10,
-      page: config.pagination?.page ?? 1,
       total: config.pagination?.total,
     },
     filtering: {
