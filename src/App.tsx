@@ -11,6 +11,7 @@ import {
   PokemonClientSideExample,
 } from "./components/pokemon-table-example";
 import { PokemonSuspenseExample } from "./components/pokemon-suspense-example";
+import { PokemonRowSuspenseExample } from "./components/pokemon-row-suspense-example";
 import "./components/table/table.css";
 import "./App.css";
 
@@ -342,6 +343,25 @@ const App = () => {
             loading. Change the Pokemon count to see different loading times!
           </p>
           <PokemonSuspenseExample />
+        </section>
+
+        {/* Example 6: Pokemon with Row-Level Suspense */}
+        <section>
+          <h2>🎭 Pokemon with Row-Level Suspense</h2>
+          <p>
+            Advanced Suspense example where each table row suspends
+            individually! Watch as Pokemon appear one by one with staggered
+            loading times.
+          </p>
+
+          <h3>Individual Row Suspense</h3>
+          <p>
+            Each Pokemon row has its own Suspense boundary and skeleton loader.
+            This creates a beautiful staggered loading effect where rows appear
+            as their data loads. Perfect for scenarios where individual items
+            have different loading times!
+          </p>
+          <PokemonRowSuspenseExample />
         </section>
       </div>
     </div>
