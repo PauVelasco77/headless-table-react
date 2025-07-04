@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTable } from "./use-table";
 import type { TableConfig, UseTableReturn, TableSort } from "./types";
 
@@ -49,6 +49,11 @@ export const useAsyncTable = <TData extends Record<string, unknown>>(
   const [isRefetching, setIsRefetching] = useState(false);
   const [serverData, setServerData] = useState<TData[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Store the fetch function in a ref to avoid dependency cycles
+  const fetchDataRef = useRef(config.fetchData);
+  fetchDataRef.current = config.fetchData;
 
   // Create base table config
   const tableConfig: TableConfig<TData> = {
@@ -79,7 +84,7 @@ export const useAsyncTable = <TData extends Record<string, unknown>>(
       setError(null);
 
       try {
-        const result = await config.fetchData(params);
+        const result = await fetchDataRef.current(params);
 
         if (result.ok) {
           setServerData(result.data.data);
@@ -99,7 +104,7 @@ export const useAsyncTable = <TData extends Record<string, unknown>>(
         table.actions.setLoading(false);
       }
     },
-    [config, table.actions],
+    [table.actions],
   );
 
   // Refetch current data
@@ -216,13 +221,16 @@ export const useAsyncTable = <TData extends Record<string, unknown>>(
 
   // Initial data fetch
   useEffect(() => {
-    fetchData({
-      page: 1,
-      pageSize: config.initialPageSize ?? 10,
-      sort: null,
-      searchQuery: "",
-    });
-  }, [fetchData, config.initialPageSize]);
+    if (!hasInitialized) {
+      setHasInitialized(true);
+      fetchData({
+        page: 1,
+        pageSize: config.initialPageSize ?? 10,
+        sort: null,
+        searchQuery: "",
+      });
+    }
+  }, [config.initialPageSize, fetchData, hasInitialized]);
 
   return {
     state: enhancedState,

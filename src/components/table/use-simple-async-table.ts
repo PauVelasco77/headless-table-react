@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTable } from "./use-table";
 import type { TableConfig, UseTableReturn } from "./types";
 
@@ -39,6 +39,11 @@ export const useSimpleAsyncTable = <TData extends Record<string, unknown>>(
   const [data, setData] = useState<TData[]>([]);
   const [error, setError] = useState<Error | null>(null);
   const [isRefetching, setIsRefetching] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Store the fetch function in a ref to avoid dependency cycles
+  const fetchDataRef = useRef(config.fetchData);
+  fetchDataRef.current = config.fetchData;
 
   // Create table config with loaded data
   const tableConfig: TableConfig<TData> = {
@@ -63,7 +68,7 @@ export const useSimpleAsyncTable = <TData extends Record<string, unknown>>(
     setError(null);
 
     try {
-      const result = await config.fetchData();
+      const result = await fetchDataRef.current();
 
       if (result.ok) {
         setData(result.data);
@@ -79,7 +84,7 @@ export const useSimpleAsyncTable = <TData extends Record<string, unknown>>(
     } finally {
       table.actions.setLoading(false);
     }
-  }, [config, table.actions]);
+  }, [table.actions]);
 
   // Refetch data
   const refetch = useCallback(async () => {
@@ -90,8 +95,11 @@ export const useSimpleAsyncTable = <TData extends Record<string, unknown>>(
 
   // Initial data fetch
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!hasInitialized) {
+      setHasInitialized(true);
+      fetchData();
+    }
+  }, [fetchData, hasInitialized]);
 
   return {
     state: table.state,
