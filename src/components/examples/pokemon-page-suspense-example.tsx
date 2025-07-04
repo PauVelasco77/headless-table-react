@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useTable } from "./table";
-import type { TableColumn, TableConfig } from "./table";
-import "./table/table.css";
+import { useTable } from "../table";
+import type { TableColumn, TableConfig } from "../table";
+import "../table/table.css";
 
 // Pokemon data types
 interface Pokemon extends Record<string, unknown> {

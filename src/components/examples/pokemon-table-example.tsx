@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Table, useAsyncTable, useSimpleAsyncTable } from "./table";
-import type { TableColumn } from "./table";
-import "./table/table.css";
+import { Table, useAsyncTable, useSimpleAsyncTable } from "../table";
+import type { TableColumn } from "../table";
+import "../table/table.css";
 
 // Pokemon data types
 interface Pokemon extends Record<string, unknown> {

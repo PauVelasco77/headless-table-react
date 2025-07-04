@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Table, useAsyncTable, useSimpleAsyncTable } from "./table";
-import type { TableColumn } from "./table";
-import "./table/table.css";
+import { Table, useAsyncTable, useSimpleAsyncTable } from "../table";
+import type { TableColumn } from "../table";
+import "../table/table.css";
 
 // Sample data types
 interface User extends Record<string, unknown> {
