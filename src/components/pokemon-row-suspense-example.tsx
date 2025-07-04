@@ -152,11 +152,9 @@ export const PokemonRowSuspenseExample = () => {
   const [key, setKey] = useState(0);
   const [pokemonData, setPokemonData] = useState<Pokemon[]>([]);
 
-  // Generate Pokemon IDs (1-151 for original generation)
-  const pokemonIds = Array.from({ length: pokemonCount }, (_, i) => i + 1);
-
   // Initialize with skeleton data
   useEffect(() => {
+    const pokemonIds = Array.from({ length: pokemonCount }, (_, i) => i + 1);
     const skeletonData = pokemonIds.map(createSkeletonPokemon);
     setPokemonData(skeletonData);
 
@@ -173,7 +171,7 @@ export const PokemonRowSuspenseExample = () => {
         console.error(`Failed to load Pokemon #${pokemonId}:`, error);
       }
     });
-  }, [pokemonCount, key, pokemonIds]);
+  }, [pokemonCount, key]);
 
   // Define columns for the Pokemon table
   const pokemonColumns: TableColumn<Pokemon>[] = [
@@ -568,9 +566,10 @@ Types: ${pokemon.types.join(", ")}`);
         }}
       >
         <strong>🎭 Row-Level Suspense with Table Component:</strong> This uses
-        our reusable Table component! Each Pokemon loads individually and
-        updates the table row as data becomes available. Watch as skeleton
-        loaders are replaced with real data one by one.
+        our reusable Table component with pagination and filtering! Each Pokemon
+        loads individually and updates the table row as data becomes available.
+        Navigate between pages to see different Pokemon loading, or search while
+        data is still loading!
       </div>
 
       <Table<Pokemon>
@@ -579,10 +578,11 @@ Types: ${pokemon.types.join(", ")}`);
           data: pokemonData,
           sortable: true,
           pagination: {
-            enabled: false, // Disable pagination for this demo
+            enabled: true,
+            pageSize: 5, // Show 5 Pokemon per page to see loading effect better
           },
           filtering: {
-            enabled: false, // Disable filtering for this demo
+            enabled: true, // Enable filtering too - you can search while loading!
           },
         }}
         className="pokemon-table"
