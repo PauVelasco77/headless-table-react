@@ -10,6 +10,14 @@ Best for large datasets where you want the server to handle pagination, sorting,
 ```tsx
 import { useAsyncTable } from './components/table';
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  department: string;
+  active: boolean;
+}
+
 const MyServerSideTable = () => {
   const { state, actions, columns, error, refetch, isRefetching } = useAsyncTable<User>({
     fetchData: async (params) => {
@@ -29,7 +37,11 @@ const MyServerSideTable = () => {
         } 
       };
     },
-    columns,
+    columns: [
+      { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+      { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+      { key: 'department', header: 'Department', accessor: 'department', sortable: true },
+    ],
     initialPageSize: 10,
   });
 
@@ -37,7 +49,7 @@ const MyServerSideTable = () => {
     <div>
       {error && <div>Error: {error.message}</div>}
       <button onClick={refetch}>Refresh</button>
-      <Table config={{ columns, data: state.data, ...otherConfig }} />
+      <Table config={{ columns, data: state.data, sortable: true, pagination: { enabled: true }, filtering: { enabled: true } }} />
     </div>
   );
 };
@@ -68,7 +80,11 @@ const MyClientSideTable = () => {
       
       return { ok: true, data: data.users };
     },
-    columns,
+    columns: [
+      { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+      { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+      { key: 'department', header: 'Department', accessor: 'department', sortable: true },
+    ],
     pagination: { enabled: true, pageSize: 10 },
     filtering: { enabled: true, searchableColumns: ['name', 'email'] },
   });
@@ -78,7 +94,7 @@ const MyClientSideTable = () => {
       {error && <div>Error: {error.message}</div>}
       <button onClick={refetch}>Refresh</button>
       <button onClick={actions.reset}>Reset Filters</button>
-      <Table config={{ columns, data: state.data, ...otherConfig }} />
+      <Table config={{ columns, data: state.data, sortable: true, pagination: { enabled: true }, filtering: { enabled: true } }} />
     </div>
   );
 };
@@ -97,6 +113,13 @@ Best when you need full control over data loading and state management.
 ```tsx
 import { useState, useEffect } from 'react';
 import { Table } from './components/table';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  department: string;
+}
 
 const MyCustomTable = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -127,13 +150,19 @@ const MyCustomTable = () => {
     loadUsers();
   }, []);
 
+  const columns = [
+    { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+    { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+    { key: 'department', header: 'Department', accessor: 'department', sortable: true },
+  ];
+
   return (
     <div>
       {error && <div>Error: {error.message}</div>}
       <button onClick={loadUsers} disabled={loading}>
         {loading ? 'Loading...' : 'Load Users'}
       </button>
-      <Table config={{ columns, data: users, ...otherConfig }} />
+      <Table config={{ columns, data: users, sortable: true, pagination: { enabled: true }, filtering: { enabled: true } }} />
     </div>
   );
 };
@@ -151,7 +180,7 @@ const MyCustomTable = () => {
 
 **Config:**
 ```tsx
-interface AsyncTableConfig<TData> {
+interface AsyncTableConfig<TData extends object> {
   fetchData: (params: {
     page?: number;
     pageSize?: number;
@@ -183,7 +212,7 @@ interface UseAsyncTableReturn<TData> {
 
 **Config:**
 ```tsx
-interface SimpleAsyncTableConfig<TData> {
+interface SimpleAsyncTableConfig<TData extends object> {
   fetchData: () => Promise<AsyncResult<TData[]>>;
   columns: TableColumn<TData>[];
   pagination?: TableConfig<TData>['pagination'];
@@ -212,11 +241,65 @@ type AsyncResult<T, E extends Error = Error> =
   | { ok: false; error: E };
 ```
 
+## 🎯 **Enhanced Type Safety**
+
+The async hooks now work with any object type without requiring index signatures:
+
+```tsx
+// ✅ Clean interface definitions work perfectly
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  profile: {
+    bio: string;
+    avatar: string;
+  };
+}
+
+// ✅ Complex nested structures are fully supported
+interface Company {
+  id: number;
+  name: string;
+  employees: {
+    total: number;
+    departments: {
+      engineering: number;
+      sales: number;
+    };
+  };
+  address: {
+    street: string;
+    city: string;
+    coordinates: {
+      lat: number;
+      lng: number;
+    };
+  };
+}
+
+// ✅ Deep key access is type-safe
+const columns: TableColumn<Company>[] = [
+  { key: 'name', header: 'Company', accessor: 'name', sortable: true },
+  { key: 'employees.total', header: 'Employees', accessor: 'employees.total', sortable: true },
+  { key: 'address.city', header: 'City', accessor: 'address.city', sortable: true },
+  { key: 'address.coordinates.lat', header: 'Latitude', accessor: 'address.coordinates.lat', sortable: true },
+];
+```
+
 ## 🚀 **Real-World Examples**
 
 ### REST API Integration
 
 ```tsx
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  department: string;
+  active: boolean;
+}
+
 const fetchUsers = async (params: any) => {
   try {
     const url = new URL('/api/users', window.location.origin);
@@ -254,6 +337,13 @@ const fetchUsers = async (params: any) => {
 ```tsx
 import { useQuery } from '@apollo/client';
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  department: string;
+}
+
 const GET_USERS = gql`
   query GetUsers($page: Int, $pageSize: Int, $sortBy: String, $sortOrder: String, $search: String) {
     users(page: $page, pageSize: $pageSize, sortBy: $sortBy, sortOrder: $sortOrder, search: $search) {
@@ -279,10 +369,18 @@ const GraphQLTable = () => {
     variables: params,
   });
 
-  const { state, actions, columns } = useTable({
+  const userColumns: TableColumn<User>[] = [
+    { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+    { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+    { key: 'department', header: 'Department', accessor: 'department', sortable: true },
+  ];
+
+  const { state, actions } = useTable({
     columns: userColumns,
     data: data?.users?.data ?? [],
-    // ... other config
+    sortable: true,
+    pagination: { enabled: true },
+    filtering: { enabled: true },
   });
 
   // Custom actions that update GraphQL variables
@@ -295,7 +393,7 @@ const GraphQLTable = () => {
     // ... other custom actions
   };
 
-  return <Table config={{ columns, data: state.data }} />;
+  return <Table config={{ columns: userColumns, data: state.data, sortable: true, pagination: { enabled: true }, filtering: { enabled: true } }} />;
 };
 ```
 
@@ -400,4 +498,29 @@ const MemoizedRow = React.memo(({ user }: { user: User }) => (
     <td>{user.email}</td>
   </tr>
 ));
-``` 
+```
+
+## 📈 **Migration from v1.x**
+
+The main change in v2.x is the removal of the `Record<string, unknown>` constraint:
+
+```tsx
+// ❌ Old - required extending Record
+interface User extends Record<string, unknown> {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// ✅ New - clean interface definition
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+```
+
+All hooks now accept any object type, making your code cleaner and more type-safe while maintaining full functionality.
+
+```tsx
+</rewritten_file> 

@@ -5,13 +5,14 @@ A flexible, reusable headless table component for React with TypeScript support.
 ## Features
 
 - **Headless Design**: Provides functionality without enforcing UI, allowing full customization
-- **TypeScript Support**: Fully typed with generic support for type safety
+- **TypeScript Support**: Fully typed with generic support for enhanced type safety
 - **Sorting**: Click column headers to sort data in ascending/descending order
 - **Pagination**: Built-in pagination with configurable page sizes
-- **Filtering**: Global search across specified columns
+- **Filtering**: Global search across specified columns with deep key support
 - **Custom Rendering**: Custom cell renderers for complex data display
 - **Loading States**: Built-in loading state management
 - **Responsive**: Mobile-friendly design with responsive controls
+- **Nested Property Access**: Type-safe access to nested object properties
 
 ## Quick Start
 
@@ -22,14 +23,15 @@ import { Table } from './components/table';
 import type { TableConfig } from './components/table';
 
 interface User {
-  readonly id: number;
-  readonly name: string;
-  readonly email: string;
+  id: number;
+  name: string;
+  email: string;
+  department: string;
 }
 
 const users: User[] = [
-  { id: 1, name: 'John Doe', email: 'john@example.com' },
-  { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+  { id: 1, name: 'John Doe', email: 'john@example.com', department: 'Engineering' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com', department: 'Design' },
 ];
 
 const config: TableConfig<User> = {
@@ -37,6 +39,7 @@ const config: TableConfig<User> = {
     { key: 'id', header: 'ID', accessor: 'id', sortable: true },
     { key: 'name', header: 'Name', accessor: 'name', sortable: true },
     { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+    { key: 'department', header: 'Department', accessor: 'department', sortable: true },
   ],
   data: users,
   sortable: true,
@@ -51,8 +54,37 @@ const config: TableConfig<User> = {
 };
 
 function MyComponent() {
-  return <Table config={config} />;
+  return (
+    <Table 
+      config={config} 
+      onRowClick={(user) => console.log('Clicked:', user.name)}
+    />
+  );
 }
+```
+
+### Nested Property Access
+
+```tsx
+interface Company {
+  id: number;
+  name: string;
+  address: {
+    city: string;
+    country: string;
+  };
+  employees: {
+    total: number;
+    engineering: number;
+  };
+}
+
+const columns: TableColumn<Company>[] = [
+  { key: 'name', header: 'Company', accessor: 'name', sortable: true },
+  { key: 'address.city', header: 'City', accessor: 'address.city', sortable: true },
+  { key: 'address.country', header: 'Country', accessor: 'address.country', sortable: true },
+  { key: 'employees.total', header: 'Employees', accessor: 'employees.total', sortable: true },
+];
 ```
 
 ### Using the Hook Only
@@ -78,13 +110,13 @@ function CustomTable() {
           <tr>
             {columns.map((column) => (
               <th
-                key={column.key}
+                key={String(column.key)}
                 onClick={() => {
                   const newDirection = 
                     state.sort?.key === column.key && state.sort.direction === 'asc' 
                       ? 'desc' 
                       : 'asc';
-                  actions.setSort({ key: column.key, direction: newDirection });
+                  actions.setSort({ key: String(column.key), direction: newDirection });
                 }}
               >
                 {column.header}
@@ -99,7 +131,7 @@ function CustomTable() {
           {state.paginatedData.map((row, index) => (
             <tr key={index}>
               {columns.map((column) => (
-                <td key={column.key}>
+                <td key={String(column.key)}>
                   {typeof column.accessor === 'function' 
                     ? String(column.accessor(row))
                     : String(row[column.accessor])
@@ -123,32 +155,43 @@ Configuration object for the table.
 
 ```tsx
 interface TableConfig<TData> {
-  readonly columns: readonly TableColumn<TData>[];
-  readonly data: readonly TData[];
-  readonly sortable?: boolean;
-  readonly pagination?: {
-    readonly enabled: boolean;
-    readonly pageSize?: number;
+  columns: TableColumn<TData>[];
+  data: TData[];
+  sortable?: boolean;
+  pagination?: {
+    enabled: boolean;
+    pageSize?: number;
   };
-  readonly filtering?: {
-    readonly enabled: boolean;
-    readonly searchableColumns?: readonly string[];
+  filtering?: {
+    enabled: boolean;
+    searchableColumns?: DeepKeys<TData>[];
   };
 }
 ```
 
 ### TableColumn<TData>
 
-Column definition for the table.
+Column definition for the table with deep key support.
 
 ```tsx
-interface TableColumn<TData> {
-  readonly key: string;
-  readonly header: string;
-  readonly accessor: keyof TData | ((row: TData) => unknown);
-  readonly sortable?: boolean;
-  readonly width?: string | number;
-  readonly render?: (value: unknown, row: TData) => React.ReactNode;
+interface TableColumn<TData, TKey extends DeepKeys<TData> = DeepKeys<TData>> {
+  key: TKey;
+  header: string;
+  accessor: TKey | ((row: TData) => unknown);
+  sortable?: boolean;
+  width?: string | number;
+  render?: (value: unknown, row: TData) => React.ReactNode;
+  sortValue?: (row: TData) => string | number;
+}
+```
+
+### Table Component Props
+
+```tsx
+interface TableProps<TData extends object> {
+  config: TableConfig<TData>;
+  className?: string;
+  onRowClick?: (row: TData) => void;
 }
 ```
 
@@ -266,24 +309,57 @@ import './components/table/table.css';
 
 Or create your own custom styles using the provided CSS classes.
 
-## TypeScript Tips
+## TypeScript Support
 
-1. **Extend Record<string, unknown>**: Your data type should extend `Record<string, unknown>` for proper type inference:
+### Enhanced Type Safety
+
+The library now uses flexible generic constraints that work with any object type:
 
 ```tsx
-interface User extends Record<string, unknown> {
-  readonly id: number;
-  readonly name: string;
-  // ... other properties
+// ✅ Works perfectly - no index signature required
+interface User {
+  id: number;
+  name: string;
+  email: string;
 }
+
+// ✅ Supports complex nested structures
+interface Company {
+  name: string;
+  address: {
+    city: string;
+    country: string;
+  };
+  employees: {
+    total: number;
+    departments: {
+      engineering: number;
+      sales: number;
+    };
+  };
+}
+
+// ✅ Deep key access is fully type-safe
+const columns: TableColumn<Company>[] = [
+  { key: 'address.city', header: 'City', accessor: 'address.city' },
+  { key: 'employees.departments.engineering', header: 'Engineers', accessor: 'employees.departments.engineering' },
+];
 ```
 
-2. **Use readonly**: Use `readonly` for arrays and object properties to prevent accidental mutations.
+### Generic Type Parameter
 
-3. **Generic Type Parameter**: Always specify the generic type parameter when using the Table component:
+Always specify the generic type parameter for full type safety:
 
 ```tsx
-<Table config={config} />
+<Table<User> config={config} />
+```
+
+### Deep Key Inference
+
+The `DeepKeys<T>` utility type provides type-safe access to nested properties:
+
+```tsx
+type UserKeys = DeepKeys<User>; // 'id' | 'name' | 'email' | 'profile.bio' | 'profile.address.city' | ...
 ```
 
 ## Performance Considerations
@@ -296,4 +372,26 @@ interface User extends Record<string, unknown> {
 const renderStatus = useCallback((value: unknown) => (
   <StatusBadge active={Boolean(value)} />
 ), []);
-``` 
+```
+
+## Migration Guide
+
+### From v1.x to v2.x
+
+The main change is the removal of the `Record<string, unknown>` constraint:
+
+```tsx
+// ❌ Old - required index signature
+interface User extends Record<string, unknown> {
+  id: number;
+  name: string;
+}
+
+// ✅ New - clean interface definition
+interface User {
+  id: number;
+  name: string;
+}
+```
+
+All existing functionality remains the same, but your interfaces are now cleaner and more type-safe.
