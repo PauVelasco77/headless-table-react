@@ -6,6 +6,10 @@ import {
   ClientSideTableExample,
   CustomAsyncTableExample,
 } from "./components/async-table-examples";
+import {
+  PokemonServerSideExample,
+  PokemonClientSideExample,
+} from "./components/pokemon-table-example";
 import "./components/table/table.css";
 import "./App.css";
 
@@ -296,6 +300,30 @@ const App = () => {
           <h3>Custom Async Implementation</h3>
           <p>This example shows manual async data management.</p>
           <CustomAsyncTableExample />
+        </section>
+
+        {/* Example 4: Pokemon API examples */}
+        <section>
+          <h2>🐱 Pokemon API Examples</h2>
+          <p>
+            Real-world examples using the Pokemon API to demonstrate async
+            loading, error handling, and different data management strategies.
+          </p>
+
+          <h3>Pokemon with Server-Side Pagination</h3>
+          <p>
+            Loads Pokemon data page by page with real network delays. Try
+            searching for Pokemon names or types like "fire" or "water".
+          </p>
+          <PokemonServerSideExample />
+
+          <h3>Load All Pokemon (Generation 1)</h3>
+          <p>
+            Loads all 151 original Pokemon at once. This demonstrates longer
+            loading times and client-side operations after data is loaded.
+            Toggle shiny sprites!
+          </p>
+          <PokemonClientSideExample />
         </section>
       </div>
     </div>
