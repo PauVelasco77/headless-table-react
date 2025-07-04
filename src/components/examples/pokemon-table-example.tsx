@@ -4,7 +4,7 @@ import type { TableColumn } from "../table";
 import "../table/table.css";
 
 // Pokemon data types
-interface Pokemon extends Record<string, unknown> {
+interface Pokemon {
   id: number;
   name: string;
   height: number;
@@ -468,7 +468,7 @@ export const PokemonServerSideExample = () => {
         )}
       </div>
 
-      <Table<Pokemon>
+      <Table
         config={{
           columns: tableColumns,
           data: state.data,
@@ -651,7 +651,7 @@ export const PokemonClientSideExample = () => {
         </div>
       )}
 
-      <Table<Pokemon>
+      <Table
         config={{
           columns: customColumns,
           data: state.data,

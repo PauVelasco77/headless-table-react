@@ -4,7 +4,7 @@ import type { TableColumn } from "../table";
 import "../table/table.css";
 
 // Pokemon data types
-interface Pokemon extends Record<string, unknown> {
+interface Pokemon {
   id: number;
   name: string;
   height: number;
@@ -572,7 +572,7 @@ Types: ${pokemon.types.join(", ")}`);
         data is still loading!
       </div>
 
-      <Table<Pokemon>
+      <Table
         config={{
           columns: pokemonColumns,
           data: pokemonData,

@@ -6,6 +6,7 @@
 export { FullFeaturedTableExample } from "./full-featured-table-example";
 export { SimpleTableExample } from "./simple-table-example";
 export { ActionButtonTableExample } from "./action-button-table-example";
+export { TypeSafeTableExample } from "./typesafe-table-example";
 
 // Async table examples
 export {

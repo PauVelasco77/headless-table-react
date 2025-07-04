@@ -1,5 +1,6 @@
 import React from "react";
-import type { TableConfig } from "./types";
+import type { TableConfig, DeepKeys } from "./types";
+import { getNestedValue } from "./types";
 import { useTable } from "./use-table";
 
 /**
@@ -7,7 +8,7 @@ import { useTable } from "./use-table";
  *
  * @template TData - The type of data objects in the table rows
  */
-interface TableProps<TData extends Record<string, unknown>> {
+interface TableProps<TData extends object> {
   /** Table configuration including columns, data, and feature settings */
   config: TableConfig<TData>;
   /** Additional CSS class names to apply to the table container */
@@ -20,14 +21,16 @@ interface TableProps<TData extends Record<string, unknown>> {
 }
 
 /**
- * Headless table component that provides complete table functionality
+ * Headless table component with enhanced type safety and deep key inference
  *
  * Features:
+ * - Type-safe column definitions with deep key inference
  * - Sorting: Click column headers to sort data
  * - Pagination: Navigate through large datasets
  * - Filtering: Search through table data
  * - Custom rendering: Use render functions for complex cell content
  * - Row interactions: Handle row clicks and selections
+ * - Nested property access: Access nested object properties with dot notation
  *
  * @template TData - The type of data objects in the table rows
  * @param props - Table configuration and event handlers
@@ -35,14 +38,32 @@ interface TableProps<TData extends Record<string, unknown>> {
  *
  * @example
  * ```tsx
- * const users = [
- *   { id: 1, name: "John", email: "john@example.com" },
- *   { id: 2, name: "Jane", email: "jane@example.com" }
+ * interface User {
+ *   id: number;
+ *   name: string;
+ *   profile: {
+ *     email: string;
+ *     address: {
+ *       city: string;
+ *     };
+ *   };
+ * }
+ *
+ * const users: User[] = [
+ *   {
+ *     id: 1,
+ *     name: "John",
+ *     profile: {
+ *       email: "john@example.com",
+ *       address: { city: "New York" }
+ *     }
+ *   }
  * ];
  *
  * const columns = [
  *   { key: "name", header: "Name", accessor: "name", sortable: true },
- *   { key: "email", header: "Email", accessor: "email", sortable: true }
+ *   { key: "profile.email", header: "Email", accessor: "profile.email", sortable: true },
+ *   { key: "profile.address.city", header: "City", accessor: "profile.address.city" }
  * ];
  *
  * <Table
@@ -50,13 +71,13 @@ interface TableProps<TData extends Record<string, unknown>> {
  *     columns,
  *     data: users,
  *     pagination: { enabled: true, pageSize: 10 },
- *     filtering: { enabled: true }
+ *     filtering: { enabled: true, searchableColumns: ["name", "profile.email"] }
  *   }}
  *   onRowClick={(user) => console.log('Clicked:', user.name)}
  * />
  * ```
  */
-export function Table<TData extends Record<string, unknown>>({
+export function Table<TData extends object>({
   config,
   className = "",
   onRowClick,
@@ -80,7 +101,7 @@ export function Table<TData extends Record<string, unknown>>({
   };
 
   /**
-   * Renders the content of a table cell
+   * Renders the content of a table cell with type-safe nested property access
    * @param column - Column definition containing accessor and render function
    * @param row - The data object for the current row
    * @returns React node to display in the cell
@@ -89,12 +110,16 @@ export function Table<TData extends Record<string, unknown>>({
     column: (typeof columns)[0],
     row: TData,
   ): React.ReactNode => {
-    const value =
-      typeof column.accessor === "function"
-        ? column.accessor(row)
-        : row[column.accessor];
+    let value: unknown;
 
-    return column.render ? column.render(value, row) : String(value);
+    if (typeof column.accessor === "function") {
+      value = column.accessor(row);
+    } else {
+      // Use the getNestedValue utility for type-safe nested access
+      value = getNestedValue(row, column.accessor as DeepKeys<TData>);
+    }
+
+    return column.render ? column.render(value, row) : String(value ?? "");
   };
 
   /**
@@ -154,15 +179,15 @@ export function Table<TData extends Record<string, unknown>>({
           <tr>
             {columns.map((column) => (
               <th
-                key={column.key}
+                key={String(column.key)}
                 style={{ width: column.width }}
                 className={`table-header ${
                   column.sortable || config.sortable ? "sortable" : ""
                 }`}
-                onClick={() => handleSort(column.key)}
+                onClick={() => handleSort(String(column.key))}
               >
                 {column.header}
-                {getSortIcon(column.key)}
+                {getSortIcon(String(column.key))}
               </th>
             ))}
           </tr>
@@ -175,7 +200,7 @@ export function Table<TData extends Record<string, unknown>>({
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((column) => (
-                <td key={column.key} className="table-cell">
+                <td key={String(column.key)} className="table-cell">
                   {renderCell(column, row)}
                 </td>
               ))}

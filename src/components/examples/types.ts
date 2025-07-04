@@ -5,7 +5,7 @@
 /**
  * User interface for table examples
  */
-export interface User extends Record<string, unknown> {
+export interface User {
   readonly id: number;
   readonly name: string;
   readonly email: string;

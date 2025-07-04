@@ -4,7 +4,7 @@ import type { TableColumn } from "../table";
 import "../table/table.css";
 
 // Sample data types
-interface User extends Record<string, unknown> {
+interface User {
   id: number;
   name: string;
   email: string;
@@ -305,7 +305,7 @@ export const ServerSideTableExample = () => {
         )}
       </div>
 
-      <Table<User>
+      <Table
         config={{
           columns: tableColumns,
           data: state.data,
@@ -369,7 +369,7 @@ export const ClientSideTableExample = () => {
         )}
       </div>
 
-      <Table<User>
+      <Table
         config={{
           columns: tableColumns,
           data: state.data,
@@ -435,7 +435,7 @@ export const CustomAsyncTableExample = () => {
         )}
       </div>
 
-      <Table<User>
+      <Table
         config={{
           columns,
           data: users,

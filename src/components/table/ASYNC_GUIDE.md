@@ -37,7 +37,7 @@ const MyServerSideTable = () => {
     <div>
       {error && <div>Error: {error.message}</div>}
       <button onClick={refetch}>Refresh</button>
-      <Table<User> config={{ columns, data: state.data, ...otherConfig }} />
+      <Table config={{ columns, data: state.data, ...otherConfig }} />
     </div>
   );
 };
@@ -78,7 +78,7 @@ const MyClientSideTable = () => {
       {error && <div>Error: {error.message}</div>}
       <button onClick={refetch}>Refresh</button>
       <button onClick={actions.reset}>Reset Filters</button>
-      <Table<User> config={{ columns, data: state.data, ...otherConfig }} />
+      <Table config={{ columns, data: state.data, ...otherConfig }} />
     </div>
   );
 };
@@ -133,7 +133,7 @@ const MyCustomTable = () => {
       <button onClick={loadUsers} disabled={loading}>
         {loading ? 'Loading...' : 'Load Users'}
       </button>
-      <Table<User> config={{ columns, data: users, ...otherConfig }} />
+      <Table config={{ columns, data: users, ...otherConfig }} />
     </div>
   );
 };

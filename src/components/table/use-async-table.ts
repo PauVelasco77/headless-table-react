@@ -15,7 +15,7 @@ type AsyncResult<T, E extends Error = Error> =
  * Configuration for async table operations
  * @template TData - The type of data objects in the table rows
  */
-interface AsyncTableConfig<TData> {
+interface AsyncTableConfig<TData extends object> {
   /**
    * Function to fetch data from the server
    * @param params - Request parameters including pagination, sorting, and search
@@ -96,7 +96,7 @@ interface UseAsyncTableReturn<TData> extends UseTableReturn<TData> {
  * }
  * ```
  */
-export const useAsyncTable = <TData extends Record<string, unknown>>(
+export const useAsyncTable = <TData extends object>(
   config: AsyncTableConfig<TData>,
 ): UseAsyncTableReturn<TData> => {
   const [error, setError] = useState<Error | null>(null);

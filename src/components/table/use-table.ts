@@ -6,16 +6,19 @@ import type {
   UseTableReturn,
   TableSort,
   TablePagination,
+  DeepKeys,
 } from "./types";
+import { getNestedValue } from "./types";
 
 /**
- * Custom hook for managing table state and functionality
+ * Custom hook for managing table state and functionality with enhanced type safety
  *
  * This hook handles all table operations including:
- * - Data filtering based on search queries
- * - Sorting by column values (ascending/descending)
+ * - Data filtering based on search queries with deep key support
+ * - Sorting by column values (ascending/descending) with custom sort functions
  * - Pagination with configurable page sizes
  * - Loading states for async operations
+ * - Type-safe nested property access
  *
  * @template TData - The type of data objects in the table rows
  * @param config - Table configuration including columns, data, and feature settings
@@ -23,26 +26,28 @@ import type {
  *
  * @example
  * ```tsx
- * const { state, actions, columns } = useTable({
+ * interface User {
+ *   id: number;
+ *   name: string;
+ *   profile: { email: string; address: { city: string } };
+ * }
+ *
+ * const { state, actions, columns } = useTable<User>({
  *   columns: [
  *     { key: "name", header: "Name", accessor: "name", sortable: true },
- *     { key: "email", header: "Email", accessor: "email" }
+ *     { key: "profile.email", header: "Email", accessor: "profile.email", sortable: true },
+ *     { key: "profile.address.city", header: "City", accessor: "profile.address.city" }
  *   ],
  *   data: users,
  *   pagination: { enabled: true, pageSize: 10 },
- *   filtering: { enabled: true }
+ *   filtering: {
+ *     enabled: true,
+ *     searchableColumns: ["name", "profile.email"] // Type-safe deep keys
+ *   }
  * });
- *
- * // Access current page data
- * console.log(state.paginatedData);
- *
- * // Control table state
- * actions.setSort({ key: "name", direction: "asc" });
- * actions.setPage(2);
- * actions.setSearchQuery("john");
  * ```
  */
-export const useTable = <TData extends Record<string, unknown>>(
+export const useTable = <TData extends object>(
   config: TableConfig<TData>,
 ): UseTableReturn<TData> => {
   // Internal state management
@@ -53,7 +58,7 @@ export const useTable = <TData extends Record<string, unknown>>(
   const [loading, setLoading] = useState(false);
 
   /**
-   * Filters data based on search query across searchable columns
+   * Filters data based on search query across searchable columns with deep key support
    * Performs case-insensitive string matching on specified or all columns
    */
   const filteredData = useMemo(() => {
@@ -70,19 +75,24 @@ export const useTable = <TData extends Record<string, unknown>>(
         const column = config.columns.find((col) => col.key === columnKey);
         if (!column) return false;
 
-        const value =
-          typeof column.accessor === "function"
-            ? column.accessor(row)
-            : row[column.accessor];
+        let value: unknown;
+        if (typeof column.accessor === "function") {
+          value = column.accessor(row);
+        } else {
+          // Use type-safe nested value access
+          value = getNestedValue(row, column.accessor as DeepKeys<TData>);
+        }
 
-        return String(value).toLowerCase().includes(searchQuery.toLowerCase());
+        return String(value ?? "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
       }),
     );
   }, [config.data, config.columns, config.filtering, searchQuery]);
 
   /**
-   * Sorts the filtered data based on current sort configuration
-   * Handles string conversion for safe comparison of unknown types
+   * Sorts the filtered data based on current sort configuration with enhanced type handling
+   * Supports custom sort functions and proper numeric/string comparison
    */
   const sortedData = useMemo(() => {
     if (!sort) return filteredData;
@@ -91,23 +101,36 @@ export const useTable = <TData extends Record<string, unknown>>(
     if (!column) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const aValue =
-        typeof column.accessor === "function"
-          ? column.accessor(a)
-          : a[column.accessor];
-      const bValue =
-        typeof column.accessor === "function"
-          ? column.accessor(b)
-          : b[column.accessor];
+      let aValue: unknown;
+      let bValue: unknown;
+
+      // Use custom sort function if provided
+      if (column.sortValue) {
+        aValue = column.sortValue(a);
+        bValue = column.sortValue(b);
+      } else if (typeof column.accessor === "function") {
+        aValue = column.accessor(a);
+        bValue = column.accessor(b);
+      } else {
+        // Use type-safe nested value access
+        aValue = getNestedValue(a, column.accessor as DeepKeys<TData>);
+        bValue = getNestedValue(b, column.accessor as DeepKeys<TData>);
+      }
+
+      // Handle null/undefined values
+      if (aValue === bValue) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
 
       let comparison = 0;
 
-      // Convert to strings for comparison to handle unknown types safely
-      const aStr = String(aValue);
-      const bStr = String(bValue);
-
-      if (aStr < bStr) comparison = -1;
-      if (aStr > bStr) comparison = 1;
+      // Handle numeric comparison
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        comparison = aValue - bValue;
+      } else {
+        // String comparison with locale support
+        comparison = String(aValue).localeCompare(String(bValue));
+      }
 
       return sort.direction === "desc" ? -comparison : comparison;
     });

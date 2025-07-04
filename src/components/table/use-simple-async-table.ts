@@ -15,7 +15,7 @@ type AsyncResult<T, E extends Error = Error> =
  * Configuration for simple async table operations
  * @template TData - The type of data objects in the table rows
  */
-interface SimpleAsyncTableConfig<TData> {
+interface SimpleAsyncTableConfig<TData extends object> {
   /**
    * Function to fetch all data from the server
    * @returns Promise resolving to a Result containing the complete data array
@@ -86,7 +86,7 @@ interface UseSimpleAsyncTableReturn<TData> extends UseTableReturn<TData> {
  * }
  * ```
  */
-export const useSimpleAsyncTable = <TData extends Record<string, unknown>>(
+export const useSimpleAsyncTable = <TData extends object>(
   config: SimpleAsyncTableConfig<TData>,
 ): UseSimpleAsyncTableReturn<TData> => {
   const [data, setData] = useState<TData[]>([]);

@@ -1,19 +1,41 @@
 /**
- * Column definition for table configuration
+ * Deep key extraction utility type for nested object access
+ * Extracts all possible nested property paths from an object type
+ */
+export type DeepKeys<T> =
+  T extends Array<infer U>
+    ? DeepKeys<U>
+    : T extends object
+      ?
+          | {
+              [K in keyof T]: K extends string
+                ? K | (T[K] extends object ? `${K}.${DeepKeys<T[K]>}` : never)
+                : never;
+            }[keyof T]
+          | (string & {})
+      : never;
+
+/**
+ * Column definition for table configuration with enhanced type safety
  *
  * @template TData - The type of data objects in the table rows
+ * @template TKey - The deep key type for type-safe property access
  */
-export interface TableColumn<TData> {
-  /** Unique identifier for the column */
-  key: string;
+export interface TableColumn<
+  TData,
+  TKey extends DeepKeys<TData> = DeepKeys<TData>,
+> {
+  /** Unique identifier for the column - must be a valid deep key of TData */
+  key: TKey;
   /** Display text shown in the column header */
   header: string;
   /**
    * Property key or function to extract data from each row
    * - Use property key for simple field access: 'name'
+   * - Use deep property key for nested access: 'user.profile.name'
    * - Use function for computed values: (row) => row.firstName + ' ' + row.lastName
    */
-  accessor: keyof TData | ((row: TData) => unknown);
+  accessor: TKey | ((row: TData) => unknown);
   /** Whether this column can be sorted (defaults to false) */
   sortable?: boolean;
   /** Fixed width for the column (CSS width value or number for pixels) */
@@ -25,6 +47,12 @@ export interface TableColumn<TData> {
    * @returns React element or string to display in the cell
    */
   render?: (value: unknown, row: TData) => React.ReactNode;
+  /**
+   * Custom sorting function for complex data types
+   * @param row - The row data object
+   * @returns A sortable value (string or number)
+   */
+  sortValue?: (row: TData) => string | number;
 }
 
 /**
@@ -50,7 +78,7 @@ export interface TablePagination {
 }
 
 /**
- * Table configuration options
+ * Table configuration options with enhanced type safety
  *
  * @template TData - The type of data objects in the table rows
  */
@@ -76,7 +104,7 @@ export interface TableConfig<TData> {
      * Column keys that should be searchable
      * If not provided, all columns will be searchable
      */
-    searchableColumns?: string[];
+    searchableColumns?: DeepKeys<TData>[];
   };
 }
 
@@ -148,3 +176,21 @@ export interface UseTableReturn<TData> {
   /** Column definitions passed from the configuration */
   columns: TableColumn<TData>[];
 }
+
+export function getNestedValue<T extends object, K extends DeepKeys<T>>(
+  obj: T,
+  path: K,
+): unknown {
+  return path
+    .split(".")
+    .reduce<unknown>(
+      (acc, part) =>
+        acc && typeof acc === "object" && part in acc
+          ? (acc as Record<string, unknown>)[part]
+          : undefined,
+      obj,
+    );
+}
+/**
+ * Re-export DeepKeys type for external use
+ */

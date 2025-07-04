@@ -104,7 +104,7 @@ export const FullFeaturedTableExample = () => {
 
   return (
     <div className="full-featured-table-example">
-      <Table<User>
+      <Table
         config={tableConfig}
         onRowClick={handleRowClick}
         className="demo-table"

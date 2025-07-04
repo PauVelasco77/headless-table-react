@@ -3,6 +3,7 @@ import {
   FullFeaturedTableExample,
   SimpleTableExample,
   ActionButtonTableExample,
+  TypeSafeTableExample,
   // Async table examples
   ServerSideTableExample,
   ClientSideTableExample,
@@ -163,6 +164,23 @@ const App = () => {
             interfaces.
           </p>
           <ActionButtonTableExample />
+        </section>
+
+        {/* Example 9: Type-Safe Table with Deep Key Access */}
+        <section>
+          <h2>🔒 Type-Safe Table with Deep Key Access</h2>
+          <p>
+            This example demonstrates enhanced type safety with deep nested
+            object access, custom sort functions, and full TypeScript inference.
+          </p>
+
+          <h3>Company Data with Complex Nested Structure</h3>
+          <p>
+            Explore type-safe access to nested properties like "employees.total"
+            and "headquarters.address.city". Notice how your IDE provides
+            autocomplete for all valid deep keys!
+          </p>
+          <TypeSafeTableExample />
         </section>
       </div>
     </div>

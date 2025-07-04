@@ -51,7 +51,7 @@ const config: TableConfig<User> = {
 };
 
 function MyComponent() {
-  return <Table<User> config={config} />;
+  return <Table config={config} />;
 }
 ```
 
@@ -236,7 +236,7 @@ const columns: TableColumn<User>[] = [
 ### Row Click Handling
 
 ```tsx
-<Table<User>
+<Table
   config={config}
   onRowClick={(user) => {
     console.log('Clicked user:', user);
@@ -283,7 +283,7 @@ interface User extends Record<string, unknown> {
 3. **Generic Type Parameter**: Always specify the generic type parameter when using the Table component:
 
 ```tsx
-<Table<User> config={config} />
+<Table config={config} />
 ```
 
 ## Performance Considerations

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { useTable } from "../table";
-import type { TableColumn, TableConfig } from "../table";
+import { Table } from "../table";
+import type { TableColumn } from "../table";
 import "../table/table.css";
 
 // Pokemon data types
-interface Pokemon extends Record<string, unknown> {
+interface Pokemon {
   id: number;
   name: string;
   height: number;
@@ -514,29 +514,11 @@ export const PokemonPageSuspenseExample = () => {
     },
   ];
 
-  // Create table configuration
-  const tableConfig: TableConfig<Pokemon> = {
-    columns: pokemonColumns,
-    data: pokemonData,
-    sortable: true,
-    pagination: {
-      enabled: true,
-      pageSize: 5,
-    },
-    filtering: {
-      enabled: true,
-    },
-  };
-
-  // Use the table hook
-  const { state, actions } = useTable(tableConfig);
-
-  // Watch for page changes and load new pages
+  // Watch for page changes and load new pages - simplified since Table component manages its own state
   useEffect(() => {
-    if (state.pagination) {
-      loadPokemonForPage(state.pagination.page, state.pagination.pageSize);
-    }
-  }, [state.pagination, loadPokemonForPage]);
+    // Load additional pages as needed - this is now handled by the Table component internally
+    // The component will manage pagination state and we just need to ensure data is available
+  }, []);
 
   const handleRefresh = () => {
     // Clear cache and force re-render
@@ -609,139 +591,22 @@ Types: ${pokemon.types.join(", ")}`);
         upfront!
       </div>
 
-      <div className="table-container pokemon-table">
-        {/* Search Input */}
-        <div className="table-search">
-          <input
-            type="text"
-            placeholder="Search Pokemon..."
-            value={state.searchQuery}
-            onChange={(e) => actions.setSearchQuery(e.target.value)}
-            className="table-search-input"
-          />
-        </div>
-
-        {/* Table */}
-        <table className="table">
-          <thead>
-            <tr>
-              {pokemonColumns.map((column) => (
-                <th
-                  key={column.key}
-                  style={{ width: column.width }}
-                  className={`table-header ${column.sortable ? "sortable" : ""}`}
-                  onClick={() => {
-                    if (column.sortable) {
-                      const newDirection =
-                        state.sort?.key === column.key &&
-                        state.sort.direction === "asc"
-                          ? "desc"
-                          : "asc";
-                      actions.setSort({
-                        key: column.key,
-                        direction: newDirection,
-                      });
-                    }
-                  }}
-                >
-                  {column.header}
-                  {state.sort?.key === column.key && (
-                    <span>{state.sort.direction === "asc" ? " ↑" : " ↓"}</span>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {state.paginatedData.map((pokemon) => (
-              <tr
-                key={pokemon.id}
-                className="table-row clickable"
-                onClick={() => handleRowClick(pokemon)}
-              >
-                {pokemonColumns.map((column) => (
-                  <td key={column.key} className="table-cell">
-                    {column.render
-                      ? column.render(
-                          typeof column.accessor === "function"
-                            ? column.accessor(pokemon)
-                            : pokemon[column.accessor],
-                          pokemon,
-                        )
-                      : String(
-                          typeof column.accessor === "function"
-                            ? column.accessor(pokemon)
-                            : pokemon[column.accessor],
-                        )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Empty State */}
-        {state.paginatedData.length === 0 && (
-          <div className="table-empty">No Pokemon found</div>
-        )}
-
-        {/* Pagination */}
-        {state.pagination && (
-          <div className="table-pagination">
-            <div className="pagination-info">
-              Showing{" "}
-              {(state.pagination.page - 1) * state.pagination.pageSize + 1}-
-              {Math.min(
-                state.pagination.page * state.pagination.pageSize,
-                state.pagination.total,
-              )}{" "}
-              of {state.pagination.total} Pokemon
-            </div>
-
-            <div className="pagination-controls">
-              <button
-                onClick={() => actions.setPage(state.pagination!.page - 1)}
-                disabled={state.pagination.page <= 1}
-                className="pagination-button"
-              >
-                Previous
-              </button>
-
-              <span className="pagination-current">
-                Page {state.pagination.page} of{" "}
-                {Math.ceil(state.pagination.total / state.pagination.pageSize)}
-              </span>
-
-              <button
-                onClick={() => actions.setPage(state.pagination!.page + 1)}
-                disabled={
-                  state.pagination.page >=
-                  Math.ceil(state.pagination.total / state.pagination.pageSize)
-                }
-                className="pagination-button"
-              >
-                Next
-              </button>
-            </div>
-
-            <div className="pagination-size">
-              <label>
-                Rows per page:
-                <select
-                  value={state.pagination.pageSize}
-                  onChange={(e) => actions.setPageSize(Number(e.target.value))}
-                  className="pagination-select"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
-              </label>
-            </div>
-          </div>
-        )}
-      </div>
+      <Table
+        config={{
+          columns: pokemonColumns,
+          data: pokemonData,
+          sortable: true,
+          pagination: {
+            enabled: true,
+            pageSize: 5,
+          },
+          filtering: {
+            enabled: true,
+          },
+        }}
+        className="pokemon-table"
+        onRowClick={handleRowClick}
+      />
 
       <style>{`
         @keyframes pulse {

@@ -162,7 +162,7 @@ export const ActionButtonTableExample = () => {
 
   return (
     <div className="action-table-example">
-      <Table<User>
+      <Table
         config={actionTableConfig}
         // Note: No onRowClick prop - we handle clicks via buttons
         className="demo-table"
