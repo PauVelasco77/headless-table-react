@@ -10,6 +10,7 @@ import {
   PokemonServerSideExample,
   PokemonClientSideExample,
 } from "./components/pokemon-table-example";
+import { PokemonSuspenseExample } from "./components/pokemon-suspense-example";
 import "./components/table/table.css";
 import "./App.css";
 
@@ -324,6 +325,23 @@ const App = () => {
             Toggle shiny sprites!
           </p>
           <PokemonClientSideExample />
+        </section>
+
+        {/* Example 5: Pokemon with Suspense */}
+        <section>
+          <h2>⚡ Pokemon with Suspense</h2>
+          <p>
+            Modern React Suspense example with declarative loading states. The
+            component suspends while fetching data, showing a beautiful
+            fallback.
+          </p>
+
+          <h3>Suspense-based Pokemon Table</h3>
+          <p>
+            Uses React 18's Suspense and the 'use' hook for clean, declarative
+            loading. Change the Pokemon count to see different loading times!
+          </p>
+          <PokemonSuspenseExample />
         </section>
       </div>
     </div>

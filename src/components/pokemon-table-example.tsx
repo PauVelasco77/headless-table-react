@@ -668,12 +668,11 @@ export const PokemonClientSideExample = () => {
         className="pokemon-table"
         onRowClick={(pokemon) => {
           alert(`${pokemon.name} Stats:
-HP: ${pokemon.stats.hp}
-Attack: ${pokemon.stats.attack}
-Defense: ${pokemon.stats.defense}
-Speed: ${pokemon.stats.speed}
-
-Types: ${pokemon.types.join(", ")}`);
+          HP: ${pokemon.stats.hp}
+          Attack: ${pokemon.stats.attack}
+          Defense: ${pokemon.stats.defense}
+          Speed: ${pokemon.stats.speed}
+          Types: ${pokemon.types.join(", ")}`);
         }}
       />
 
