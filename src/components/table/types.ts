@@ -95,6 +95,10 @@ export interface TableConfig<TData> {
     enabled: boolean;
     /** Default number of items per page (defaults to 10) */
     pageSize?: number;
+    /** Total number of items across all pages */
+    total?: number;
+    /** Current page number (1-based) */
+    page?: number;
   };
   /** Search and filtering configuration */
   filtering?: {

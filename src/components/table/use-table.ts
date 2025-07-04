@@ -53,7 +53,7 @@ export const useTable = <TData extends object>(
   // Internal state management
   const [sort, setSort] = useState<TableSort | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(config.pagination?.page ?? 1);
   const [pageSize, setPageSize] = useState(config.pagination?.pageSize ?? 10);
   const [loading, setLoading] = useState(false);
 
@@ -143,7 +143,7 @@ export const useTable = <TData extends object>(
   const pagination = useMemo((): TablePagination | null => {
     if (!config.pagination?.enabled) return null;
 
-    const total = sortedData.length;
+    const total = config.pagination?.total ?? sortedData.length;
     const totalPages = Math.ceil(total / pageSize);
     const safePage = Math.min(Math.max(1, currentPage), totalPages || 1);
 
@@ -152,7 +152,13 @@ export const useTable = <TData extends object>(
       pageSize,
       total,
     };
-  }, [config.pagination?.enabled, sortedData.length, pageSize, currentPage]);
+  }, [
+    config.pagination?.enabled,
+    config.pagination?.total,
+    sortedData.length,
+    pageSize,
+    currentPage,
+  ]);
 
   /**
    * Extracts the data for the current page from sorted data

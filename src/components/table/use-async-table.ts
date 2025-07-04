@@ -23,9 +23,9 @@ interface AsyncTableConfig<TData extends object> {
    */
   fetchData: (params: {
     /** Current page number (1-based) */
-    page?: number;
+    page: number;
     /** Number of items per page */
-    pageSize?: number;
+    pageSize: number;
     /** Current sort configuration */
     sort?: TableSort | null;
     /** Current search query */
@@ -41,9 +41,16 @@ interface AsyncTableConfig<TData extends object> {
   /** Column definitions for the table */
   columns: TableConfig<TData>["columns"];
   /** Initial number of items per page (defaults to 10) */
-  initialPageSize?: number;
-  /** Whether to enable client-side operations (currently unused) */
-  enableClientSideOperations?: boolean;
+  pagination?: {
+    /** Whether pagination is enabled */
+    enabled: boolean;
+    /** Default number of items per page (defaults to 10) */
+    pageSize?: number;
+    /** Total number of items across all pages */
+    total?: number;
+    /** Current page number (1-based) */
+    page?: number;
+  };
 }
 
 /**
@@ -116,7 +123,9 @@ export const useAsyncTable = <TData extends object>(
     sortable: true,
     pagination: {
       enabled: true,
-      pageSize: config.initialPageSize ?? 10,
+      pageSize: config.pagination?.pageSize ?? 10,
+      page: config.pagination?.page ?? 1,
+      total: config.pagination?.total,
     },
     filtering: {
       enabled: true,
@@ -132,8 +141,8 @@ export const useAsyncTable = <TData extends object>(
    */
   const fetchData = useCallback(
     async (params: {
-      page?: number;
-      pageSize?: number;
+      page: number;
+      pageSize: number;
       sort?: TableSort | null;
       searchQuery?: string;
     }) => {
@@ -289,10 +298,10 @@ export const useAsyncTable = <TData extends object>(
         }
       : null,
     // For server-side operations, paginatedData is the same as data
-    paginatedData: config.enableClientSideOperations
+    paginatedData: config.pagination?.enabled
       ? table.state.paginatedData
       : serverData,
-    filteredData: config.enableClientSideOperations
+    filteredData: config.pagination?.enabled
       ? table.state.filteredData
       : serverData,
   };
@@ -303,12 +312,12 @@ export const useAsyncTable = <TData extends object>(
       setHasInitialized(true);
       fetchData({
         page: 1,
-        pageSize: config.initialPageSize ?? 10,
+        pageSize: config.pagination?.pageSize ?? 10,
         sort: null,
         searchQuery: "",
       });
     }
-  }, [config.initialPageSize, fetchData, hasInitialized]);
+  }, [config.pagination?.pageSize, fetchData, hasInitialized]);
 
   return {
     state: enhancedState,
