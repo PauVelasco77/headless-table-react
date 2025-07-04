@@ -524,7 +524,7 @@ export const PokemonClientSideExample = () => {
     if (col.key === "sprite") {
       return {
         ...col,
-        render: (value: unknown, row: Pokemon) => (
+        render: (_: unknown, row: Pokemon) => (
           <div style={{ display: "flex", gap: "4px" }}>
             <img
               src={

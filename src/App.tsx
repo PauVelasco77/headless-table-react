@@ -12,6 +12,7 @@ import {
 } from "./components/pokemon-table-example";
 import { PokemonSuspenseExample } from "./components/pokemon-suspense-example";
 import { PokemonRowSuspenseExample } from "./components/pokemon-row-suspense-example";
+import { PokemonPageSuspenseExample } from "./components/pokemon-page-suspense-example";
 import "./components/table/table.css";
 import "./App.css";
 
@@ -362,6 +363,25 @@ const App = () => {
             have different loading times!
           </p>
           <PokemonRowSuspenseExample />
+        </section>
+
+        {/* Example 7: Pokemon with Page-Level Suspense */}
+        <section>
+          <h2>📄 Pokemon with Page-Level Suspense</h2>
+          <p>
+            Efficient page-based loading where only the current page's Pokemon
+            are fetched! This is perfect for large datasets where you don't want
+            to load everything at once.
+          </p>
+
+          <h3>Page-Only Loading</h3>
+          <p>
+            Navigate between pages to see fresh loading animations for each
+            page. Each page loads independently with row-level suspense, but
+            only fetches the Pokemon you actually need to see. Much more
+            efficient than loading all data upfront!
+          </p>
+          <PokemonPageSuspenseExample />
         </section>
       </div>
     </div>
