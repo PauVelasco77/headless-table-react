@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Table, useTable } from "./components/table";
 import type { TableColumn, TableConfig } from "./components/table";
+import {
+  ServerSideTableExample,
+  ClientSideTableExample,
+  CustomAsyncTableExample,
+} from "./components/async-table-examples";
 import "./components/table/table.css";
 import "./App.css";
 
@@ -269,6 +274,28 @@ const App = () => {
           </p>
 
           <SimpleTableExample />
+        </section>
+
+        {/* Example 3: Async data examples */}
+        <section>
+          <h2>Async Data Examples</h2>
+
+          <h3>Server-side Operations</h3>
+          <p>
+            This example shows server-side pagination, sorting, and filtering.
+          </p>
+          <ServerSideTableExample />
+
+          <h3>Client-side Operations</h3>
+          <p>
+            This example loads all data once and performs operations on the
+            client.
+          </p>
+          <ClientSideTableExample />
+
+          <h3>Custom Async Implementation</h3>
+          <p>This example shows manual async data management.</p>
+          <CustomAsyncTableExample />
         </section>
       </div>
     </div>
