@@ -10,17 +10,52 @@ import type {
 
 /**
  * Custom hook for managing table state and functionality
+ *
+ * This hook handles all table operations including:
+ * - Data filtering based on search queries
+ * - Sorting by column values (ascending/descending)
+ * - Pagination with configurable page sizes
+ * - Loading states for async operations
+ *
+ * @template TData - The type of data objects in the table rows
+ * @param config - Table configuration including columns, data, and feature settings
+ * @returns Object containing table state, actions, and column definitions
+ *
+ * @example
+ * ```tsx
+ * const { state, actions, columns } = useTable({
+ *   columns: [
+ *     { key: "name", header: "Name", accessor: "name", sortable: true },
+ *     { key: "email", header: "Email", accessor: "email" }
+ *   ],
+ *   data: users,
+ *   pagination: { enabled: true, pageSize: 10 },
+ *   filtering: { enabled: true }
+ * });
+ *
+ * // Access current page data
+ * console.log(state.paginatedData);
+ *
+ * // Control table state
+ * actions.setSort({ key: "name", direction: "asc" });
+ * actions.setPage(2);
+ * actions.setSearchQuery("john");
+ * ```
  */
 export const useTable = <TData extends Record<string, unknown>>(
   config: TableConfig<TData>,
 ): UseTableReturn<TData> => {
+  // Internal state management
   const [sort, setSort] = useState<TableSort | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(config.pagination?.pageSize ?? 10);
   const [loading, setLoading] = useState(false);
 
-  // Filter data based on search query
+  /**
+   * Filters data based on search query across searchable columns
+   * Performs case-insensitive string matching on specified or all columns
+   */
   const filteredData = useMemo(() => {
     if (!config.filtering?.enabled || !searchQuery.trim()) {
       return config.data;
@@ -45,7 +80,10 @@ export const useTable = <TData extends Record<string, unknown>>(
     );
   }, [config.data, config.columns, config.filtering, searchQuery]);
 
-  // Sort filtered data
+  /**
+   * Sorts the filtered data based on current sort configuration
+   * Handles string conversion for safe comparison of unknown types
+   */
   const sortedData = useMemo(() => {
     if (!sort) return filteredData;
 
@@ -75,7 +113,10 @@ export const useTable = <TData extends Record<string, unknown>>(
     });
   }, [filteredData, sort, config.columns]);
 
-  // Calculate pagination
+  /**
+   * Calculates pagination state based on sorted data and current page settings
+   * Returns null if pagination is disabled
+   */
   const pagination = useMemo((): TablePagination | null => {
     if (!config.pagination?.enabled) return null;
 
@@ -90,7 +131,10 @@ export const useTable = <TData extends Record<string, unknown>>(
     };
   }, [config.pagination?.enabled, sortedData.length, pageSize, currentPage]);
 
-  // Get paginated data
+  /**
+   * Extracts the data for the current page from sorted data
+   * Returns all data if pagination is disabled
+   */
   const paginatedData = useMemo(() => {
     if (!pagination) return sortedData;
 
@@ -100,26 +144,46 @@ export const useTable = <TData extends Record<string, unknown>>(
     return sortedData.slice(startIndex, endIndex);
   }, [sortedData, pagination]);
 
-  // Actions
+  // Action handlers with automatic page resets for better UX
+
+  /**
+   * Updates sort configuration and resets to first page
+   * @param newSort - New sort configuration or null to clear sorting
+   */
   const handleSetSort = useCallback((newSort: TableSort | null) => {
     setSort(newSort);
     setCurrentPage(1); // Reset to first page when sorting
   }, []);
 
+  /**
+   * Navigates to a specific page
+   * @param page - Target page number (1-based)
+   */
   const handleSetPage = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
 
+  /**
+   * Changes page size and resets to first page
+   * @param newPageSize - New number of items per page
+   */
   const handleSetPageSize = useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1); // Reset to first page when changing page size
   }, []);
 
+  /**
+   * Updates search query and resets to first page
+   * @param query - New search string
+   */
   const handleSetSearchQuery = useCallback((query: string) => {
     setSearchQuery(query);
     setCurrentPage(1); // Reset to first page when searching
   }, []);
 
+  /**
+   * Resets all table state to initial values
+   */
   const handleReset = useCallback(() => {
     setSort(null);
     setSearchQuery("");

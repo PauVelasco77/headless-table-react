@@ -2,14 +2,59 @@ import React from "react";
 import type { TableConfig } from "./types";
 import { useTable } from "./use-table";
 
+/**
+ * Props for the Table component
+ *
+ * @template TData - The type of data objects in the table rows
+ */
 interface TableProps<TData extends Record<string, unknown>> {
+  /** Table configuration including columns, data, and feature settings */
   config: TableConfig<TData>;
+  /** Additional CSS class names to apply to the table container */
   className?: string;
+  /**
+   * Callback function triggered when a table row is clicked
+   * @param row - The complete data object for the clicked row
+   */
   onRowClick?: (row: TData) => void;
 }
 
 /**
- * Headless table component that provides structure and functionality
+ * Headless table component that provides complete table functionality
+ *
+ * Features:
+ * - Sorting: Click column headers to sort data
+ * - Pagination: Navigate through large datasets
+ * - Filtering: Search through table data
+ * - Custom rendering: Use render functions for complex cell content
+ * - Row interactions: Handle row clicks and selections
+ *
+ * @template TData - The type of data objects in the table rows
+ * @param props - Table configuration and event handlers
+ * @returns Fully functional table with all specified features
+ *
+ * @example
+ * ```tsx
+ * const users = [
+ *   { id: 1, name: "John", email: "john@example.com" },
+ *   { id: 2, name: "Jane", email: "jane@example.com" }
+ * ];
+ *
+ * const columns = [
+ *   { key: "name", header: "Name", accessor: "name", sortable: true },
+ *   { key: "email", header: "Email", accessor: "email", sortable: true }
+ * ];
+ *
+ * <Table
+ *   config={{
+ *     columns,
+ *     data: users,
+ *     pagination: { enabled: true, pageSize: 10 },
+ *     filtering: { enabled: true }
+ *   }}
+ *   onRowClick={(user) => console.log('Clicked:', user.name)}
+ * />
+ * ```
  */
 export function Table<TData extends Record<string, unknown>>({
   config,
@@ -18,6 +63,10 @@ export function Table<TData extends Record<string, unknown>>({
 }: TableProps<TData>) {
   const { state, actions, columns } = useTable(config);
 
+  /**
+   * Handles column header clicks for sorting
+   * @param columnKey - The key of the column to sort by
+   */
   const handleSort = (columnKey: string): void => {
     const column = columns.find((col) => col.key === columnKey);
     if (!column?.sortable && config.sortable !== true) return;
@@ -30,6 +79,12 @@ export function Table<TData extends Record<string, unknown>>({
     actions.setSort({ key: columnKey, direction: newDirection });
   };
 
+  /**
+   * Renders the content of a table cell
+   * @param column - Column definition containing accessor and render function
+   * @param row - The data object for the current row
+   * @returns React node to display in the cell
+   */
   const renderCell = (
     column: (typeof columns)[0],
     row: TData,
@@ -42,11 +97,20 @@ export function Table<TData extends Record<string, unknown>>({
     return column.render ? column.render(value, row) : String(value);
   };
 
+  /**
+   * Gets the sort indicator icon for a column header
+   * @param columnKey - The key of the column to check
+   * @returns Sort icon string (↑ for asc, ↓ for desc, empty for no sort)
+   */
   const getSortIcon = (columnKey: string): string => {
     if (state.sort?.key !== columnKey) return "";
     return state.sort.direction === "asc" ? " ↑" : " ↓";
   };
 
+  /**
+   * Generates pagination information text
+   * @returns Formatted string showing current page range and total items
+   */
   const getPaginationInfo = (): string => {
     if (!state.pagination) return "";
 
@@ -57,6 +121,10 @@ export function Table<TData extends Record<string, unknown>>({
     return `Showing ${start}-${end} of ${total} results`;
   };
 
+  /**
+   * Calculates the total number of pages
+   * @returns Total page count based on data size and page size
+   */
   const getTotalPages = (): number => {
     if (!state.pagination) return 1;
     return Math.ceil(state.pagination.total / state.pagination.pageSize);
