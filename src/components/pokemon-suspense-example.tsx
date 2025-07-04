@@ -346,7 +346,7 @@ const PokemonTableContent = ({
           sortable: true,
           pagination: {
             enabled: true,
-            pageSize: 15,
+            pageSize: 5,
           },
           filtering: {
             enabled: true,

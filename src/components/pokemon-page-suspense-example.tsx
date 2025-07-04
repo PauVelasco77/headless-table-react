@@ -201,7 +201,7 @@ export const PokemonPageSuspenseExample = () => {
 
   // Load first page on mount
   useEffect(() => {
-    loadPokemonForPage(1, 10);
+    loadPokemonForPage(1, 5);
   }, [loadPokemonForPage]);
 
   // Define columns for the Pokemon table
@@ -521,7 +521,7 @@ export const PokemonPageSuspenseExample = () => {
     sortable: true,
     pagination: {
       enabled: true,
-      pageSize: 10,
+      pageSize: 5,
     },
     filtering: {
       enabled: true,
