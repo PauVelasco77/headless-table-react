@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "eslint-plugin-prettier": "^5.5.1",
+    "pokeapi-js-wrapper": "^1.2.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
