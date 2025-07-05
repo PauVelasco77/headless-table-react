@@ -765,6 +765,9 @@ Types: ${pokemon.types.join(", ")}`);
         config={{
           fetchData: fetchPokemonDataForTable,
           columns: pokemonColumns,
+          filtering: {
+            enabled: true,
+          },
           pagination: {
             pageSize: 10,
             enabled: true,
