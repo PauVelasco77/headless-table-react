@@ -4,8 +4,34 @@ import type { TableConfig, UseTableReturn, TableSort, DeepKeys } from "./types";
 
 /**
  * Result type for async operations following the Result pattern
- * @template T - The success data type
- * @template E - The error type (defaults to Error)
+ *
+ * This type provides a structured way to handle async operations that can either
+ * succeed or fail, eliminating the need for try-catch blocks in calling code.
+ * It's inspired by Rust's Result type and functional programming patterns.
+ *
+ * @template T - The success data type returned when the operation succeeds
+ * @template E - The error type returned when the operation fails (defaults to Error)
+ *
+ * @example
+ * ```tsx
+ * // Function that returns a Result
+ * const fetchUser = async (id: number): Promise<AsyncResult<User>> => {
+ *   try {
+ *     const user = await api.getUser(id);
+ *     return { ok: true, data: user };
+ *   } catch (error) {
+ *     return { ok: false, error: error as Error };
+ *   }
+ * };
+ *
+ * // Using the Result
+ * const result = await fetchUser(123);
+ * if (result.ok) {
+ *   console.log(result.data.name); // TypeScript knows this is User
+ * } else {
+ *   console.error(result.error.message); // TypeScript knows this is Error
+ * }
+ * ```
  */
 type AsyncResult<T, E extends Error = Error> =
   | { ok: true; data: T }
