@@ -29,3 +29,19 @@ export { PokemonPageSuspenseExample } from "./pokemon-page-suspense-example";
 // Shared types and data
 export type { User } from "./types";
 export { sampleUsers } from "./types";
+
+// Pokemon API service
+export type {
+  Pokemon,
+  PokemonApiResult,
+  PokemonFetchParams,
+  PokemonListData,
+} from "./pokemon-api";
+export {
+  fetchPokemonWithPagination,
+  fetchAllPokemon,
+  fetchPokemonByName,
+  fetchPokemonTypes,
+  fetchPokemonByType,
+  getTypeColor,
+} from "./pokemon-api";
