@@ -56,28 +56,61 @@ function MyTable() {
 ### Async Data Loading
 
 ```tsx
-import { useAsyncTable } from './components/table';
+import { AsyncTable } from './components/table';
 
-function AsyncTable() {
-  const { state, error, refetch } = useAsyncTable<User>({
-    fetchData: async ({ page, pageSize, sort, searchQuery }) => {
-      const response = await fetch(`/api/users?page=${page}&size=${pageSize}`);
-      const data = await response.json();
-      
-      return response.ok 
-        ? { ok: true, data: { data: data.users, total: data.total } }
-        : { ok: false, error: new Error(data.message) };
-    },
-    columns: [
-      { key: 'name', header: 'Name', accessor: 'name', sortable: true },
-      { key: 'email', header: 'Email', accessor: 'email', sortable: true },
-    ],
-    initialPageSize: 10,
-  });
+function ServerSideTable() {
+  return (
+    <AsyncTable
+      config={{
+        fetchData: async ({ page, pageSize, sort, searchQuery }) => {
+          const response = await fetch(`/api/users?page=${page}&size=${pageSize}`);
+          const data = await response.json();
+          
+          return response.ok 
+            ? { ok: true, data: { data: data.users, total: data.total } }
+            : { ok: false, error: new Error(data.message) };
+        },
+        columns: [
+          { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+          { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+        ],
+        pagination: { enabled: true, pageSize: 10 },
+        filtering: { enabled: true, searchableColumns: ['name', 'email'] },
+      }}
+      onRowClick={(user) => console.log('Clicked:', user.name)}
+    />
+  );
+}
+```
 
-  if (error) return <div>Error: {error.message}</div>;
-  
-  return <Table config={{ columns, data: state.data, /* ... */ }} />;
+### Client-Side Data Loading
+
+```tsx
+import { SimpleAsyncTable } from './components/table';
+
+function ClientSideTable() {
+  return (
+    <SimpleAsyncTable
+      config={{
+        fetchData: async () => {
+          const response = await fetch('/api/users/all');
+          const users = await response.json();
+          
+          return response.ok 
+            ? { ok: true, data: users }
+            : { ok: false, error: new Error('Failed to load users') };
+        },
+        columns: [
+          { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+          { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+        ],
+        pagination: { enabled: true, pageSize: 10 },
+        filtering: { enabled: true, searchableColumns: ['name', 'email'] },
+      }}
+      showRefreshButton={true}
+      onRowClick={(user) => console.log('Clicked:', user.name)}
+    />
+  );
 }
 ```
 
@@ -85,10 +118,12 @@ function AsyncTable() {
 
 ### Core Components
 
-- **`Table`**: Main headless table component with full feature support
-- **`useTable`**: Core hook for table state management and functionality
-- **`useAsyncTable`**: Hook for server-side data operations (pagination, sorting, filtering)
-- **`useSimpleAsyncTable`**: Hook for client-side operations with initial async data load
+- **`Table`**: Main headless table component for static data with full feature support
+- **`AsyncTable`**: High-level component for server-side operations (pagination, sorting, filtering trigger API calls)
+- **`SimpleAsyncTable`**: High-level component for client-side operations (load once, then operate locally)
+- **`useTable`**: Core hook for table state management and custom implementations
+- **`useAsyncTable`**: Hook for server-side data operations (used internally by AsyncTable)
+- **`useSimpleAsyncTable`**: Hook for client-side operations (used internally by SimpleAsyncTable)
 
 ### Type Safety
 
@@ -116,10 +151,13 @@ interface Company {
 
 ## 📚 Documentation
 
-- **[Table Component Guide](src/components/table/README.md)** - Complete API reference and examples
-- **[Async Data Guide](src/components/table/ASYNC_GUIDE.md)** - Async data loading patterns and best practices
-- **[Examples Collection](src/components/examples/README.md)** - 11 comprehensive examples covering all use cases
-- **[Migration Guide](src/components/table/MIGRATION.md)** - Upgrade guide from v1.x to v2.x
+📖 **[Complete Documentation](docs/index.md)** - Comprehensive documentation index with navigation guide
+
+### Quick Links
+- **[Table Component Guide](docs/README.md)** - Complete API reference and examples
+- **[Async Data Guide](docs/ASYNC_GUIDE.md)** - Async data loading patterns and best practices
+- **[Examples Collection](docs/EXAMPLES.md)** - 11 comprehensive examples covering all use cases
+- **[Migration Guide](docs/MIGRATION.md)** - Upgrade guide from v1.x to v2.x
 
 ## 🎯 Examples
 
@@ -188,8 +226,26 @@ npm run lint
 
 ## 📄 License
 
-This project is built for educational and demonstration purposes. Feel free to use the code as inspiration for your own projects.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🤝 Contributing
 
 This is a demonstration project showcasing modern React table patterns. The codebase serves as a reference for building production-ready table components with TypeScript and React.
+
+### Component Selection Guide
+
+Choose the right component for your use case:
+
+- **`Table`**: Use for static data or when you need full control over data management
+- **`AsyncTable`**: Use for server-side pagination, sorting, and filtering (each operation triggers an API call)
+- **`SimpleAsyncTable`**: Use when you want to load all data once, then handle pagination/sorting/filtering on the client
+- **`useTable` hook**: Use when building custom table implementations or need direct access to table state
+
+### Quick Decision Tree
+
+```
+Do you have static data? → Use Table
+Do you need server-side operations? → Use AsyncTable  
+Do you want to load data once and operate locally? → Use SimpleAsyncTable
+Do you need custom table UI? → Use useTable hook
+```

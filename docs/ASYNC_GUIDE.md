@@ -1,14 +1,16 @@
 # Async Data Management Guide
 
-This guide covers different approaches to managing async data with the headless table component.
+This guide covers different approaches to managing async data with the headless table component library.
 
 ## 🎯 **Three Approaches to Async Data**
 
-### 1. **Server-Side Operations** (`useAsyncTable`)
+### 1. **Server-Side Operations** (`AsyncTable`)
 Best for large datasets where you want the server to handle pagination, sorting, and filtering.
 
+**Use `AsyncTable` component for the simplest implementation:**
+
 ```tsx
-import { useAsyncTable } from './components/table';
+import { AsyncTable } from './components/table';
 
 interface User {
   id: number;
@@ -19,83 +21,116 @@ interface User {
 }
 
 const MyServerSideTable = () => {
-  const { state, actions, columns, error, refetch, isRefetching } = useAsyncTable<User>({
-    fetchData: async (params) => {
-      // Your API call here
-      const response = await fetch(`/api/users?page=${params.page}&sort=${params.sort?.key}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        return { ok: false, error: new Error(data.message) };
-      }
-      
-      return { 
-        ok: true, 
-        data: { 
-          data: data.users, 
-          total: data.total 
-        } 
-      };
-    },
-    columns: [
-      { key: 'name', header: 'Name', accessor: 'name', sortable: true },
-      { key: 'email', header: 'Email', accessor: 'email', sortable: true },
-      { key: 'department', header: 'Department', accessor: 'department', sortable: true },
-    ],
-    initialPageSize: 10,
-  });
-
   return (
-    <div>
-      {error && <div>Error: {error.message}</div>}
-      <button onClick={refetch}>Refresh</button>
-      <Table config={{ columns, data: state.data, sortable: true, pagination: { enabled: true }, filtering: { enabled: true } }} />
-    </div>
+    <AsyncTable
+      config={{
+        fetchData: async (params) => {
+          // Your API call here
+          const response = await fetch(`/api/users?page=${params.page}&sort=${params.sort?.key}`);
+          const data = await response.json();
+          
+          if (!response.ok) {
+            return { ok: false, error: new Error(data.message) };
+          }
+          
+          return { 
+            ok: true, 
+            data: { 
+              data: data.users, 
+              total: data.total 
+            } 
+          };
+        },
+        columns: [
+          { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+          { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+          { key: 'department', header: 'Department', accessor: 'department', sortable: true },
+        ],
+        pagination: { enabled: true, pageSize: 10 },
+        filtering: { enabled: true, searchableColumns: ['name', 'email'] },
+        sortable: true,
+      }}
+      onRowClick={(user) => console.log('Clicked:', user)}
+    />
   );
 };
 ```
 
 **Features:**
 - ✅ Server-side pagination, sorting, filtering
-- ✅ Automatic loading states
-- ✅ Error handling
-- ✅ Refetch capability
+- ✅ Automatic loading states and error handling
+- ✅ Built-in refresh functionality
 - ✅ Debounced search (300ms)
+- ✅ Minimal setup required
 
-### 2. **Client-Side Operations** (`useSimpleAsyncTable`)
-Best for smaller datasets where you want to load all data once and handle operations on the client.
+**For advanced customization, use the `useAsyncTable` hook:**
 
 ```tsx
-import { useSimpleAsyncTable } from './components/table';
+import { useAsyncTable, Table } from './components/table';
 
-const MyClientSideTable = () => {
-  const { state, actions, columns, error, refetch, isRefetching } = useSimpleAsyncTable<User>({
-    fetchData: async () => {
-      const response = await fetch('/api/users');
-      const data = await response.json();
-      
-      if (!response.ok) {
-        return { ok: false, error: new Error(data.message) };
-      }
-      
-      return { ok: true, data: data.users };
+const AdvancedServerSideTable = () => {
+  const { state, error, refetch, isRefetching } = useAsyncTable<User>({
+    fetchData: async (params) => {
+      // Your custom fetch logic here
     },
-    columns: [
-      { key: 'name', header: 'Name', accessor: 'name', sortable: true },
-      { key: 'email', header: 'Email', accessor: 'email', sortable: true },
-      { key: 'department', header: 'Department', accessor: 'department', sortable: true },
-    ],
+    columns: [...],
     pagination: { enabled: true, pageSize: 10 },
-    filtering: { enabled: true, searchableColumns: ['name', 'email'] },
   });
 
   return (
     <div>
-      {error && <div>Error: {error.message}</div>}
-      <button onClick={refetch}>Refresh</button>
-      <button onClick={actions.reset}>Reset Filters</button>
-      <Table config={{ columns, data: state.data, sortable: true, pagination: { enabled: true }, filtering: { enabled: true } }} />
+      {error && <div className="error">Error: {error.message}</div>}
+      <button onClick={refetch} disabled={isRefetching}>
+        {isRefetching ? 'Refreshing...' : 'Refresh'}
+      </button>
+      <Table
+        config={{
+          columns: state.columns,
+          data: state.data,
+          sortable: true,
+          pagination: { enabled: true, pageSize: 10 },
+          filtering: { enabled: true },
+        }}
+      />
     </div>
+  );
+};
+```
+
+### 2. **Client-Side Operations** (`SimpleAsyncTable`)
+Best for smaller datasets where you want to load all data once and handle operations on the client.
+
+**Use `SimpleAsyncTable` component for the simplest implementation:**
+
+```tsx
+import { SimpleAsyncTable } from './components/table';
+
+const MyClientSideTable = () => {
+  return (
+    <SimpleAsyncTable
+      config={{
+        fetchData: async () => {
+          const response = await fetch('/api/users');
+          const data = await response.json();
+          
+          if (!response.ok) {
+            return { ok: false, error: new Error(data.message) };
+          }
+          
+          return { ok: true, data: data.users };
+        },
+        columns: [
+          { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+          { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+          { key: 'department', header: 'Department', accessor: 'department', sortable: true },
+        ],
+        pagination: { enabled: true, pageSize: 10 },
+        filtering: { enabled: true, searchableColumns: ['name', 'email'] },
+        sortable: true,
+      }}
+      showRefreshButton={true}
+      onRowClick={(user) => console.log('Clicked:', user)}
+    />
   );
 };
 ```
@@ -104,8 +139,46 @@ const MyClientSideTable = () => {
 - ✅ One-time data loading
 - ✅ Client-side pagination, sorting, filtering
 - ✅ Fast operations (no server requests)
-- ✅ Full table functionality
-- ✅ Reset capability
+- ✅ Built-in refresh and reset functionality
+- ✅ Minimal setup required
+
+**For advanced customization, use the `useSimpleAsyncTable` hook:**
+
+```tsx
+import { useSimpleAsyncTable, Table } from './components/table';
+
+const AdvancedClientSideTable = () => {
+  const { state, actions, error, refetch, isRefetching } = useSimpleAsyncTable<User>({
+    fetchData: async () => {
+      // Your custom fetch logic here
+    },
+    columns: [...],
+    pagination: { enabled: true, pageSize: 10 },
+    filtering: { enabled: true, searchableColumns: ['name', 'email'] },
+  });
+
+  return (
+    <div>
+      {error && <div className="error">Error: {error.message}</div>}
+      <div className="controls">
+        <button onClick={refetch} disabled={isRefetching}>
+          {isRefetching ? 'Loading...' : 'Refresh Data'}
+        </button>
+        <button onClick={actions.reset}>Reset Filters</button>
+      </div>
+      <Table
+        config={{
+          columns: state.columns,
+          data: state.data,
+          sortable: true,
+          pagination: { enabled: true, pageSize: 10 },
+          filtering: { enabled: true },
+        }}
+      />
+    </div>
+  );
+};
+```
 
 ### 3. **Manual Management** (Custom Implementation)
 Best when you need full control over data loading and state management.

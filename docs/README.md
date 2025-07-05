@@ -1,6 +1,26 @@
-# Headless Table Component
+# Headless Table Component Library
 
-A flexible, reusable headless table component for React with TypeScript support.
+A flexible, reusable headless table component library for React with TypeScript support and comprehensive async data handling.
+
+## Component Architecture
+
+This library provides multiple components to handle different data loading patterns:
+
+### 🏗️ **Core Components**
+
+- **`Table`** - Headless table for static data with full customization
+- **`AsyncTable`** - High-level component for server-side operations  
+- **`SimpleAsyncTable`** - High-level component for client-side operations
+- **`useTable`** - Core hook for custom table implementations
+
+### 📊 **When to Use Each Component**
+
+| Component | Use Case | Data Loading | Operations |
+|-----------|----------|--------------|------------|
+| `Table` | Static data or full control | Manual | Client-side |
+| `AsyncTable` | Large datasets | Server-side pagination | Server-side |
+| `SimpleAsyncTable` | Medium datasets | Load once | Client-side |
+| `useTable` hook | Custom UI | Manual | Client-side |
 
 ## Features
 
@@ -10,7 +30,8 @@ A flexible, reusable headless table component for React with TypeScript support.
 - **Pagination**: Built-in pagination with configurable page sizes
 - **Filtering**: Global search across specified columns with deep key support
 - **Custom Rendering**: Custom cell renderers for complex data display
-- **Loading States**: Built-in loading state management
+- **Async Support**: Multiple async data loading patterns with error handling
+- **Loading States**: Built-in loading state management with error recovery
 - **Responsive**: Mobile-friendly design with responsive controls
 - **Nested Property Access**: Type-safe access to nested object properties
 
@@ -85,6 +106,80 @@ const columns: TableColumn<Company>[] = [
   { key: 'address.country', header: 'Country', accessor: 'address.country', sortable: true },
   { key: 'employees.total', header: 'Employees', accessor: 'employees.total', sortable: true },
 ];
+```
+
+### AsyncTable Usage
+
+For server-side operations where each pagination, sorting, or filtering action triggers an API call:
+
+```tsx
+import { AsyncTable } from './components/table';
+
+function ServerSideTable() {
+  return (
+    <AsyncTable
+      config={{
+        fetchData: async ({ page, pageSize, sort, searchQuery }) => {
+          const params = new URLSearchParams({
+            page: page.toString(),
+            size: pageSize.toString(),
+            ...(sort && { sortBy: sort.key, sortDir: sort.direction }),
+            ...(searchQuery && { search: searchQuery }),
+          });
+          
+          const response = await fetch(`/api/users?${params}`);
+          const data = await response.json();
+          
+          return response.ok 
+            ? { ok: true, data: { data: data.users, total: data.total } }
+            : { ok: false, error: new Error(data.message) };
+        },
+        columns: [
+          { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+          { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+        ],
+        pagination: { enabled: true, pageSize: 10 },
+        filtering: { enabled: true, searchableColumns: ['name', 'email'] },
+        sortable: true,
+      }}
+      onRowClick={(user) => console.log('Clicked:', user.name)}
+    />
+  );
+}
+```
+
+### SimpleAsyncTable Usage
+
+For client-side operations where you load all data once, then handle pagination/sorting/filtering locally:
+
+```tsx
+import { SimpleAsyncTable } from './components/table';
+
+function ClientSideTable() {
+  return (
+    <SimpleAsyncTable
+      config={{
+        fetchData: async () => {
+          const response = await fetch('/api/users/all');
+          const users = await response.json();
+          
+          return response.ok 
+            ? { ok: true, data: users }
+            : { ok: false, error: new Error('Failed to load users') };
+        },
+        columns: [
+          { key: 'name', header: 'Name', accessor: 'name', sortable: true },
+          { key: 'email', header: 'Email', accessor: 'email', sortable: true },
+        ],
+        pagination: { enabled: true, pageSize: 10 },
+        filtering: { enabled: true, searchableColumns: ['name', 'email'] },
+        sortable: true,
+      }}
+      showRefreshButton={true}
+      onRowClick={(user) => console.log('Clicked:', user.name)}
+    />
+  );
+}
 ```
 
 ### Using the Hook Only
