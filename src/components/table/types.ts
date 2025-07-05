@@ -181,6 +181,41 @@ export interface UseTableReturn<TData> {
   columns: TableColumn<TData>[];
 }
 
+/**
+ * Safely extracts a nested value from an object using a dot-notation path
+ *
+ * This function provides type-safe access to deeply nested object properties
+ * using string paths like "user.profile.email". It handles cases where
+ * intermediate properties might be undefined or null.
+ *
+ * @template T - The type of the source object
+ * @template K - The deep key type constrained to valid paths in T
+ * @param obj - The source object to extract the value from
+ * @param path - Dot-notation path to the desired property (e.g., "user.profile.email")
+ * @returns The value at the specified path, or undefined if any part of the path is invalid
+ *
+ * @example
+ * ```tsx
+ * interface User {
+ *   profile: {
+ *     contact: {
+ *       email: string;
+ *     };
+ *   };
+ * }
+ *
+ * const user: User = {
+ *   profile: {
+ *     contact: {
+ *       email: "john@example.com"
+ *     }
+ *   }
+ * };
+ *
+ * const email = getNestedValue(user, "profile.contact.email"); // "john@example.com"
+ * const missing = getNestedValue(user, "profile.missing.field"); // undefined
+ * ```
+ */
 export function getNestedValue<T extends object, K extends DeepKeys<T>>(
   obj: T,
   path: K,
