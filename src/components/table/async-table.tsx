@@ -170,9 +170,6 @@ export function AsyncTable<TData extends object>({
         </div>
       )}
 
-      {/* Loading State */}
-      {state.loading && <div className="table-loading">Loading...</div>}
-
       {/* Table */}
       <table className="table">
         <thead>

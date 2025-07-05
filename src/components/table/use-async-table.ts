@@ -46,8 +46,6 @@ export interface AsyncTableConfig<TData extends object> {
     enabled: boolean;
     /** Default number of items per page (defaults to 10) */
     pageSize?: number;
-    /** Total number of items across all pages */
-    total?: number;
     /** Current page number (1-based) */
     page?: number;
   };
@@ -137,7 +135,7 @@ export const useAsyncTable = <TData extends object>(
     pagination: {
       enabled: true,
       pageSize: config.pagination?.pageSize ?? 10,
-      total: config.pagination?.total,
+      total: totalCount,
     },
     filtering: {
       enabled: true,
