@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Table, useAsyncTable } from "../table";
+import { AsyncTable } from "../table";
 import type { TableColumn } from "../table";
 import "../table/table.css";
 
@@ -409,19 +409,6 @@ export const PokemonPageSuspenseExample = () => {
     },
   ];
 
-  // Use async table hook - this will handle pagination properly
-  const { state, error, refetch, isRefetching } = useAsyncTable<Pokemon>({
-    fetchData: fetchPokemonPage,
-    columns: pokemonColumns,
-    initialPageSize: 5,
-  });
-
-  const handleRefresh = () => {
-    // Clear cache and force re-render
-    pokemonCache.clear();
-    refetch();
-  };
-
   const handleRowClick = (pokemon: Pokemon) => {
     alert(`${pokemon.name} Stats:
 HP: ${pokemon.stats.hp}
@@ -443,20 +430,6 @@ Types: ${pokemon.types.join(", ")}`);
           flexWrap: "wrap",
         }}
       >
-        <button
-          onClick={handleRefresh}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "#10b981",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          🔄 Refresh Data
-        </button>
-
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <input
             type="checkbox"
@@ -477,49 +450,26 @@ Types: ${pokemon.types.join(", ")}`);
           fontSize: "14px",
         }}
       >
-        <strong>📄 PokéAPI Pagination:</strong> This example uses the official
-        PokéAPI pagination endpoint with proper async/await! Each page fetches
-        the Pokemon list, then loads all Pokemon details for that page. Click
-        "Next" to see the loading state while the new page data is fetched.
+        <strong>📄 AsyncTable with PokéAPI Pagination:</strong> This example
+        uses the AsyncTable component with the official PokéAPI pagination
+        endpoint. Each page fetches the Pokemon list, then loads all Pokemon
+        details for that page. The AsyncTable automatically handles loading
+        states and error handling.
       </div>
 
-      {error && (
-        <div
-          style={{
-            color: "red",
-            marginBottom: "1rem",
-            padding: "0.5rem",
-            backgroundColor: "#fee2e2",
-            border: "1px solid #fca5a5",
-            borderRadius: "4px",
-          }}
-        >
-          Error: {error.message}
-        </div>
-      )}
-
-      {isRefetching && (
-        <div
-          style={{
-            color: "blue",
-            marginBottom: "1rem",
-            padding: "0.5rem",
-            backgroundColor: "#dbeafe",
-            border: "1px solid #93c5fd",
-            borderRadius: "4px",
-          }}
-        >
-          🔄 Loading Pokemon data...
-        </div>
-      )}
-
-      <Table
+      <AsyncTable
         config={{
+          fetchData: fetchPokemonPage,
           columns: pokemonColumns,
-          data: state.data,
+          pagination: {
+            enabled: true,
+            pageSize: 5,
+          },
+          filtering: {
+            enabled: true,
+            searchableColumns: ["name", "types"],
+          },
           sortable: true,
-          pagination: { enabled: true, pageSize: 5 },
-          filtering: { enabled: true },
         }}
         className="pokemon-table"
         onRowClick={handleRowClick}

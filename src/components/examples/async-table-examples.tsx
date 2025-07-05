@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Table, useAsyncTable, useSimpleAsyncTable } from "../table";
+import { Table, AsyncTable, SimpleAsyncTable } from "../table";
 import type { TableColumn } from "../table";
 import "../table/table.css";
 
@@ -270,120 +270,91 @@ const columns: TableColumn<User>[] = [
 ];
 
 /**
- * Example 1: Server-side pagination, sorting, and filtering
+ * Example 1: Server-side pagination, sorting, and filtering using AsyncTable
  */
 export const ServerSideTableExample = () => {
-  const {
-    state,
-    columns: tableColumns,
-    error,
-    refetch,
-    isRefetching,
-  } = useAsyncTable<User>({
-    fetchData: fetchUsersWithPagination,
-    columns,
-    initialPageSize: 5,
-  });
-
   return (
     <div>
       <div
         style={{
           marginBottom: "1rem",
-          display: "flex",
-          gap: "1rem",
-          alignItems: "center",
+          padding: "0.75rem",
+          backgroundColor: "#f0f9ff",
+          border: "1px solid #0ea5e9",
+          borderRadius: "8px",
+          fontSize: "14px",
         }}
       >
-        <button onClick={refetch} disabled={state.loading || isRefetching}>
-          {isRefetching ? "Refetching..." : "Refresh Data"}
-        </button>
-        {error && (
-          <div style={{ color: "red", fontSize: "14px" }}>
-            Error: {error.message}
-          </div>
-        )}
+        <strong>🚀 Server-Side AsyncTable:</strong> This example uses the{" "}
+        <code>AsyncTable</code> component which automatically handles
+        server-side pagination, sorting, and filtering. All operations trigger
+        new API calls with debounced search (300ms delay).
       </div>
 
-      <Table
+      <AsyncTable
         config={{
-          columns: tableColumns,
-          data: state.data,
-          sortable: true,
+          fetchData: fetchUsersWithPagination,
+          columns,
           pagination: {
             enabled: true,
-            pageSize: state.pagination?.pageSize ?? 5,
+            pageSize: 5,
           },
           filtering: {
             enabled: true,
+            searchableColumns: ["name", "email", "department"],
           },
+          sortable: true,
         }}
         className="server-side-table"
+        onRowClick={(user) => {
+          alert(`Server-side clicked: ${user.name} (${user.email})`);
+        }}
       />
     </div>
   );
 };
 
 /**
- * Example 2: Load all data once, then client-side operations
+ * Example 2: Load all data once, then client-side operations using SimpleAsyncTable
  */
 export const ClientSideTableExample = () => {
-  const {
-    state,
-    actions,
-    columns: tableColumns,
-    error,
-    refetch,
-    isRefetching,
-  } = useSimpleAsyncTable<User>({
-    fetchData: fetchAllUsers,
-    columns,
-    pagination: {
-      enabled: true,
-      pageSize: 5,
-    },
-    filtering: {
-      enabled: true,
-      searchableColumns: ["name", "email", "department"],
-    },
-  });
-
   return (
     <div>
       <div
         style={{
           marginBottom: "1rem",
-          display: "flex",
-          gap: "1rem",
-          alignItems: "center",
+          padding: "0.75rem",
+          backgroundColor: "#f0fdf4",
+          border: "1px solid #10b981",
+          borderRadius: "8px",
+          fontSize: "14px",
         }}
       >
-        <button onClick={refetch} disabled={state.loading || isRefetching}>
-          {isRefetching ? "Refetching..." : "Refresh Data"}
-        </button>
-        <button onClick={actions.reset}>Reset Filters</button>
-        {error && (
-          <div style={{ color: "red", fontSize: "14px" }}>
-            Error: {error.message}
-          </div>
-        )}
+        <strong>⚡ Client-Side SimpleAsyncTable:</strong> This example uses the{" "}
+        <code>SimpleAsyncTable</code> component which loads all data once, then
+        performs pagination, sorting, and filtering on the client side. This
+        provides instant responses to user interactions after the initial load.
       </div>
 
-      <Table
+      <SimpleAsyncTable
         config={{
-          columns: tableColumns,
-          data: state.data,
-          sortable: true,
+          fetchData: fetchAllUsers,
+          columns,
           pagination: {
             enabled: true,
-            pageSize: state.pagination?.pageSize ?? 5,
+            pageSize: 5,
           },
           filtering: {
             enabled: true,
             searchableColumns: ["name", "email", "department"],
           },
+          sortable: true,
         }}
         className="client-side-table"
+        showRefreshButton={true}
+        onRowClick={(user) => {
+          alert(`Client-side clicked: ${user.name} (${user.email})`);
+        }}
       />
     </div>
   );

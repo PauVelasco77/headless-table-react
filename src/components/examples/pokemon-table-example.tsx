@@ -1,56 +1,103 @@
 import { useState } from "react";
-import { Table, useAsyncTable, useSimpleAsyncTable } from "../table";
+import { AsyncTable, SimpleAsyncTable } from "../table";
 import type { TableColumn } from "../table";
 import "../table/table.css";
 
-// Pokemon data types
+/**
+ * Represents a Pokemon with processed data from the PokeAPI
+ *
+ * This interface defines the structure of Pokemon data after processing
+ * the raw API response into a more usable format for table display.
+ */
 interface Pokemon {
-  id: number;
-  name: string;
-  height: number;
-  weight: number;
-  types: string[];
-  sprites: {
-    front_default: string;
-    front_shiny: string;
+  /** Unique Pokemon ID number */
+  readonly id: number;
+  /** Pokemon name (e.g., "pikachu", "charizard") */
+  readonly name: string;
+  /** Height in decimeters (1 decimeter = 10 cm) */
+  readonly height: number;
+  /** Weight in hectograms (1 hectogram = 100 grams) */
+  readonly weight: number;
+  /** Array of Pokemon types (e.g., ["electric"], ["fire", "flying"]) */
+  readonly types: string[];
+  /** Sprite images for the Pokemon */
+  readonly sprites: {
+    /** URL to the default front-facing sprite */
+    readonly front_default: string;
+    /** URL to the shiny variant front-facing sprite */
+    readonly front_shiny: string;
   };
-  stats: {
-    hp: number;
-    attack: number;
-    defense: number;
-    speed: number;
+  /** Base stats for the Pokemon */
+  readonly stats: {
+    /** Hit Points (HP) base stat */
+    readonly hp: number;
+    /** Attack base stat */
+    readonly attack: number;
+    /** Defense base stat */
+    readonly defense: number;
+    /** Speed base stat */
+    readonly speed: number;
   };
 }
 
-// Pokemon API response types
+/**
+ * Response structure from the PokeAPI list endpoint
+ *
+ * This interface represents the paginated list response when fetching
+ * multiple Pokemon from the API.
+ */
 interface PokemonListResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: Array<{
-    name: string;
-    url: string;
+  /** Total number of Pokemon available */
+  readonly count: number;
+  /** URL to the next page of results, null if on last page */
+  readonly next: string | null;
+  /** URL to the previous page of results, null if on first page */
+  readonly previous: string | null;
+  /** Array of Pokemon basic info with URLs to detailed data */
+  readonly results: Array<{
+    /** Pokemon name */
+    readonly name: string;
+    /** URL to fetch detailed Pokemon data */
+    readonly url: string;
   }>;
 }
 
+/**
+ * Response structure from the PokeAPI detail endpoint
+ *
+ * This interface represents the detailed Pokemon data returned when
+ * fetching a specific Pokemon by ID or name from the API.
+ */
 interface PokemonDetailResponse {
-  id: number;
-  name: string;
-  height: number;
-  weight: number;
-  types: Array<{
-    type: {
-      name: string;
+  /** Unique Pokemon ID number */
+  readonly id: number;
+  /** Pokemon name */
+  readonly name: string;
+  /** Height in decimeters */
+  readonly height: number;
+  /** Weight in hectograms */
+  readonly weight: number;
+  /** Array of type information with nested structure */
+  readonly types: Array<{
+    readonly type: {
+      /** Type name (e.g., "electric", "fire") */
+      readonly name: string;
     };
   }>;
-  sprites: {
-    front_default: string;
-    front_shiny: string;
+  /** Sprite image URLs */
+  readonly sprites: {
+    /** URL to default front sprite */
+    readonly front_default: string;
+    /** URL to shiny front sprite */
+    readonly front_shiny: string;
   };
-  stats: Array<{
-    base_stat: number;
-    stat: {
-      name: string;
+  /** Array of stat information with nested structure */
+  readonly stats: Array<{
+    /** The base stat value */
+    readonly base_stat: number;
+    readonly stat: {
+      /** Stat name (e.g., "hp", "attack", "defense", "speed") */
+      readonly name: string;
     };
   }>;
 }
@@ -386,103 +433,43 @@ const getTypeColor = (type: string): string => {
 };
 
 /**
- * Example 1: Pokemon with server-side pagination
+ * Example 1: Pokemon with server-side pagination using AsyncTable
  */
 export const PokemonServerSideExample = () => {
-  const {
-    state,
-    columns: tableColumns,
-    error,
-    refetch,
-    isRefetching,
-  } = useAsyncTable<Pokemon>({
-    fetchData: fetchPokemonWithPagination,
-    columns: pokemonColumns,
-    initialPageSize: 10,
-  });
-
   return (
     <div>
       <div
         style={{
           marginBottom: "1rem",
-          display: "flex",
-          gap: "1rem",
-          alignItems: "center",
-          flexWrap: "wrap",
+          padding: "0.75rem",
+          backgroundColor: "#fef3c7",
+          border: "1px solid #fbbf24",
+          borderRadius: "8px",
+          fontSize: "14px",
         }}
       >
-        <button
-          onClick={refetch}
-          disabled={state.loading || isRefetching}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor:
-              state.loading || isRefetching ? "#6b7280" : "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: state.loading || isRefetching ? "not-allowed" : "pointer",
-          }}
-        >
-          {isRefetching ? "🔄 Refetching..." : "🔄 Refresh Pokemon"}
-        </button>
-
-        {state.loading && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              color: "#3b82f6",
-              fontWeight: "bold",
-            }}
-          >
-            <div
-              style={{
-                width: "16px",
-                height: "16px",
-                border: "2px solid #3b82f6",
-                borderTop: "2px solid transparent",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-              }}
-            />
-            Loading Pokemon data...
-          </div>
-        )}
-
-        {error && (
-          <div
-            style={{
-              color: "#dc2626",
-              fontSize: "14px",
-              padding: "0.5rem",
-              backgroundColor: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: "4px",
-            }}
-          >
-            ⚠️ Error: {error.message}
-          </div>
-        )}
+        <strong>🐱 Server-Side Pokemon AsyncTable:</strong> This example
+        demonstrates server-side pagination with real PokeAPI data. Each page
+        loads 10 Pokemon with their sprites, types, and stats. Search and
+        sorting trigger new API calls with debounced search functionality.
       </div>
 
-      <Table
+      <AsyncTable
         config={{
-          columns: tableColumns,
-          data: state.data,
-          sortable: true,
+          fetchData: fetchPokemonWithPagination,
+          columns: pokemonColumns,
           pagination: {
             enabled: true,
-            pageSize: state.pagination?.pageSize ?? 10,
+            pageSize: 10,
           },
           filtering: {
             enabled: true,
+            searchableColumns: ["name", "types"],
           },
+          sortable: true,
         }}
         className="pokemon-table"
-        onRowClick={(pokemon) => {
+        onRowClick={(pokemon: Pokemon) => {
           alert(`You clicked on ${pokemon.name}! 
 Type(s): ${pokemon.types.join(", ")}
 Height: ${pokemon.height / 10}m
@@ -500,23 +487,9 @@ Weight: ${pokemon.weight / 10}kg`);
 };
 
 /**
- * Example 2: Load all Pokemon at once (first 151)
+ * Example 2: Load all Pokemon at once (first 151) using SimpleAsyncTable
  */
 export const PokemonClientSideExample = () => {
-  const { state, actions, error, refetch, isRefetching } =
-    useSimpleAsyncTable<Pokemon>({
-      fetchData: fetchAllPokemon,
-      columns: pokemonColumns,
-      pagination: {
-        enabled: true,
-        pageSize: 15,
-      },
-      filtering: {
-        enabled: true,
-        searchableColumns: ["name", "types"],
-      },
-    });
-
   const [showShiny, setShowShiny] = useState(false);
 
   // Custom columns that can show shiny sprites
@@ -548,44 +521,28 @@ export const PokemonClientSideExample = () => {
       <div
         style={{
           marginBottom: "1rem",
+          padding: "0.75rem",
+          backgroundColor: "#f0fdf4",
+          border: "1px solid #10b981",
+          borderRadius: "8px",
+          fontSize: "14px",
+        }}
+      >
+        <strong>⚡ Client-Side Pokemon SimpleAsyncTable:</strong> This example
+        loads all 151 Generation 1 Pokemon at once, then performs all operations
+        (pagination, sorting, filtering) on the client side for instant
+        responses. Toggle between normal and shiny sprites!
+      </div>
+
+      <div
+        style={{
+          marginBottom: "1rem",
           display: "flex",
           gap: "1rem",
           alignItems: "center",
           flexWrap: "wrap",
         }}
       >
-        <button
-          onClick={refetch}
-          disabled={state.loading || isRefetching}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor:
-              state.loading || isRefetching ? "#6b7280" : "#10b981",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: state.loading || isRefetching ? "not-allowed" : "pointer",
-          }}
-        >
-          {isRefetching
-            ? "⏳ Loading 151 Pokemon..."
-            : "📥 Load All Pokemon (Gen 1)"}
-        </button>
-
-        <button
-          onClick={actions.reset}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "#6b7280",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          🔄 Reset Filters
-        </button>
-
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <input
             type="checkbox"
@@ -594,79 +551,25 @@ export const PokemonClientSideExample = () => {
           />
           ✨ Show Shiny Sprites
         </label>
-
-        {state.loading && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              color: "#10b981",
-              fontWeight: "bold",
-            }}
-          >
-            <div
-              style={{
-                width: "16px",
-                height: "16px",
-                border: "2px solid #10b981",
-                borderTop: "2px solid transparent",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-              }}
-            />
-            Loading all 151 Pokemon... This may take a moment!
-          </div>
-        )}
-
-        {error && (
-          <div
-            style={{
-              color: "#dc2626",
-              fontSize: "14px",
-              padding: "0.5rem",
-              backgroundColor: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: "4px",
-            }}
-          >
-            ⚠️ Error: {error.message}
-          </div>
-        )}
       </div>
 
-      {state.data.length > 0 && (
-        <div
-          style={{
-            marginBottom: "1rem",
-            padding: "0.5rem",
-            backgroundColor: "#f0f9ff",
-            border: "1px solid #bae6fd",
-            borderRadius: "4px",
-            fontSize: "14px",
-          }}
-        >
-          📊 Loaded {state.data.length} Pokemon! Use search to filter by name or
-          type.
-        </div>
-      )}
-
-      <Table
+      <SimpleAsyncTable
         config={{
+          fetchData: fetchAllPokemon,
           columns: customColumns,
-          data: state.data,
-          sortable: true,
           pagination: {
             enabled: true,
-            pageSize: state.pagination?.pageSize ?? 15,
+            pageSize: 15,
           },
           filtering: {
             enabled: true,
             searchableColumns: ["name", "types"],
           },
+          sortable: true,
         }}
         className="pokemon-table"
-        onRowClick={(pokemon) => {
+        showRefreshButton={true}
+        onRowClick={(pokemon: Pokemon) => {
           alert(`${pokemon.name} Stats:
           HP: ${pokemon.stats.hp}
           Attack: ${pokemon.stats.attack}
