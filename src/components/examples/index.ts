@@ -15,13 +15,6 @@ export {
   CustomAsyncTableExample,
 } from "./async-table-examples";
 
-// Async table component examples
-export {
-  AsyncTableComponentExample,
-  SimpleAsyncTableComponentExample,
-  AsyncTableWithCustomComponentsExample,
-} from "./async-table-component-example";
-
 // Pokemon table examples
 export {
   PokemonServerSideExample,
