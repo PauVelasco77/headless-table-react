@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Table } from "../table";
+import { useState, useRef, useCallback } from "react";
+import { AsyncTable } from "../table";
 import type { TableColumn } from "../table";
 import "../table/table.css";
 
@@ -21,7 +21,7 @@ interface Pokemon {
     speed: number;
   };
   isLoading?: boolean;
-  url?: string; // Added for PokeAPI reference
+  url?: string;
 }
 
 interface PokemonDetailResponse {
@@ -57,8 +57,8 @@ interface PokemonListResponse {
   }>;
 }
 
-// Cache for individual Pokemon
-const pokemonRowCache = new Map<string, Promise<Pokemon>>();
+// Cache for Pokemon data
+const pokemonCache = new Map<string, Promise<Pokemon>>();
 
 /**
  * Fetch Pokemon list with pagination from PokeAPI
@@ -79,15 +79,38 @@ const fetchPokemonList = async (
 };
 
 /**
- * Fetch individual Pokemon data for row-level suspense
+ * Create skeleton Pokemon for loading state
+ */
+const createSkeletonPokemon = (name: string, url: string): Pokemon => ({
+  id: 0,
+  name: name,
+  height: 0,
+  weight: 0,
+  types: ["unknown"],
+  sprites: {
+    front_default: "",
+    front_shiny: "",
+  },
+  stats: {
+    hp: 0,
+    attack: 0,
+    defense: 0,
+    speed: 0,
+  },
+  isLoading: true,
+  url,
+});
+
+/**
+ * Fetch individual Pokemon data
  */
 const fetchPokemonByUrl = async (url: string): Promise<Pokemon> => {
-  if (pokemonRowCache.has(url)) {
-    return pokemonRowCache.get(url)!;
+  if (pokemonCache.has(url)) {
+    return pokemonCache.get(url)!;
   }
 
   const promise = (async () => {
-    // Add random delay to simulate network variance
+    // Add random delay to simulate network variance and show loading states
     await new Promise((resolve) =>
       setTimeout(resolve, Math.random() * 2000 + 500),
     );
@@ -119,11 +142,12 @@ const fetchPokemonByUrl = async (url: string): Promise<Pokemon> => {
         speed:
           detail.stats.find((s) => s.stat.name === "speed")?.base_stat || 0,
       },
+      isLoading: false,
       url,
     } as Pokemon;
   })();
 
-  pokemonRowCache.set(url, promise);
+  pokemonCache.set(url, promise);
   return promise;
 };
 
@@ -153,82 +177,205 @@ const getTypeColor = (type: string): string => {
 };
 
 /**
- * Placeholder Pokemon for skeleton loading
- */
-const createSkeletonPokemon = (name: string, url: string): Pokemon => ({
-  id: 0,
-  name: `Loading ${name}...`,
-  height: 0,
-  weight: 0,
-  types: ["unknown"],
-  sprites: {
-    front_default: "",
-    front_shiny: "",
-  },
-  stats: {
-    hp: 0,
-    attack: 0,
-    defense: 0,
-    speed: 0,
-  },
-  isLoading: true,
-  url,
-});
-
-/**
- * Main Pokemon Row Suspense Example Component using Table with PokeAPI pagination
+ * Main Pokemon Row Suspense Example Component using AsyncTable
  */
 export const PokemonRowSuspenseExample = () => {
   const [showShiny, setShowShiny] = useState(false);
-  const [key, setKey] = useState(0);
   const [pokemonData, setPokemonData] = useState<Pokemon[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [loading, setLoading] = useState(false);
+  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+  const currentPageDataRef = useRef<Pokemon[]>([]);
 
-  // Load Pokemon list and individual Pokemon data
-  useEffect(() => {
-    const loadPokemonPage = async () => {
-      setLoading(true);
+  // Force update counter for re-renders
+
+  /**
+   * Fetch Pokemon data with server-side pagination for AsyncTable
+   * This creates skeleton data first, then loads each Pokemon individually
+   */
+  const fetchPokemonWithPagination = useCallback(
+    async (params: {
+      page: number;
+      pageSize: number;
+      sort?: { key: string; direction: "asc" | "desc" } | null;
+      searchQuery?: string;
+    }) => {
       try {
-        // Calculate offset for current page
-        const offset = (currentPage - 1) * pageSize;
+        // Calculate offset for PokeAPI pagination
+        const offset = (params.page - 1) * params.pageSize;
 
         // Fetch Pokemon list from PokeAPI
-        const listResponse = await fetchPokemonList(pageSize, offset);
-        setTotalCount(listResponse.count);
+        const pokemonList = await fetchPokemonList(params.pageSize, offset);
 
-        // Create skeleton data first
-        const skeletonData = listResponse.results.map((pokemon) =>
+        // Create skeleton data first for immediate display
+        const skeletonData = pokemonList.results.map((pokemon) =>
           createSkeletonPokemon(pokemon.name, pokemon.url),
         );
-        setPokemonData(skeletonData);
 
-        // Load each Pokemon individually
-        listResponse.results.forEach(async (pokemonRef, index) => {
+        // Set initial skeleton data
+        currentPageDataRef.current = [...skeletonData];
+        setPokemonData([...skeletonData]);
+
+        // Start loading individual Pokemon in the background
+        pokemonList.results.forEach(async (pokemonRef, index) => {
           try {
             const pokemon = await fetchPokemonByUrl(pokemonRef.url);
-            setPokemonData((prev) => {
-              const newData = [...prev];
-              newData[index] = pokemon;
-              return newData;
-            });
+
+            // Update the specific row when data loads
+            if (currentPageDataRef.current[index]?.url === pokemonRef.url) {
+              currentPageDataRef.current[index] = pokemon;
+              setPokemonData([...currentPageDataRef.current]);
+            }
           } catch (error) {
             console.error(`Failed to load Pokemon ${pokemonRef.name}:`, error);
+
+            // Update with error state
+            if (currentPageDataRef.current[index]?.url === pokemonRef.url) {
+              currentPageDataRef.current[index] = {
+                ...currentPageDataRef.current[index],
+                name: `Error loading ${pokemonRef.name}`,
+                isLoading: false,
+              };
+              setPokemonData([...currentPageDataRef.current]);
+            }
           }
         });
+
+        // Apply filtering to skeleton data if search query provided
+        let filteredData = currentPageDataRef.current;
+        if (params.searchQuery) {
+          const query = params.searchQuery.toLowerCase();
+          filteredData = currentPageDataRef.current.filter(
+            (pokemon) =>
+              pokemon.name.toLowerCase().includes(query) ||
+              pokemon.types.some((type) => type.toLowerCase().includes(query)),
+          );
+        }
+
+        // Apply sorting to skeleton data if provided
+        if (params.sort) {
+          filteredData.sort((a, b) => {
+            let aValue: unknown;
+            let bValue: unknown;
+
+            // Handle nested stat access
+            if (params.sort!.key === "hp") {
+              aValue = a.stats.hp;
+              bValue = b.stats.hp;
+            } else if (params.sort!.key === "attack") {
+              aValue = a.stats.attack;
+              bValue = b.stats.attack;
+            } else {
+              aValue = a[params.sort!.key as keyof Pokemon];
+              bValue = b[params.sort!.key as keyof Pokemon];
+            }
+
+            // Handle comparison
+            if (aValue === bValue) return 0;
+            if (aValue == null) return 1;
+            if (bValue == null) return -1;
+
+            let comparison = 0;
+            if (typeof aValue === "number" && typeof bValue === "number") {
+              comparison = aValue - bValue;
+            } else {
+              comparison = String(aValue).localeCompare(String(bValue));
+            }
+
+            return params.sort!.direction === "desc" ? -comparison : comparison;
+          });
+        }
+
+        return {
+          ok: true,
+          data: {
+            data: filteredData,
+            total: pokemonList.count, // Total count from PokeAPI
+          },
+        } as const;
       } catch (error) {
-        console.error("Failed to load Pokemon list:", error);
-      } finally {
-        setLoading(false);
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error
+              : new Error("Failed to fetch Pokemon"),
+        } as const;
       }
-    };
+    },
+    [],
+  );
 
-    loadPokemonPage();
-  }, [currentPage, pageSize, key]);
+  // Use the current pokemonData state for rendering
+  const fetchPokemonDataForTable = useCallback(
+    async (params: {
+      page: number;
+      pageSize: number;
+      sort?: { key: string; direction: "asc" | "desc" } | null;
+      searchQuery?: string;
+    }) => {
+      // If we have data for this page and it's not the first load, return current data
+      if (pokemonData.length > 0 && forceUpdateCounter > 0) {
+        let filteredData = pokemonData;
 
-  // Define columns for the Pokemon table
+        // Apply filtering if search query provided
+        if (params.searchQuery) {
+          const query = params.searchQuery.toLowerCase();
+          filteredData = pokemonData.filter(
+            (pokemon) =>
+              pokemon.name.toLowerCase().includes(query) ||
+              pokemon.types.some((type) => type.toLowerCase().includes(query)),
+          );
+        }
+
+        // Apply sorting if provided
+        if (params.sort) {
+          filteredData = [...filteredData].sort((a, b) => {
+            let aValue: unknown;
+            let bValue: unknown;
+
+            // Handle nested stat access
+            if (params.sort!.key === "hp") {
+              aValue = a.stats.hp;
+              bValue = b.stats.hp;
+            } else if (params.sort!.key === "attack") {
+              aValue = a.stats.attack;
+              bValue = b.stats.attack;
+            } else {
+              aValue = a[params.sort!.key as keyof Pokemon];
+              bValue = b[params.sort!.key as keyof Pokemon];
+            }
+
+            // Handle comparison
+            if (aValue === bValue) return 0;
+            if (aValue == null) return 1;
+            if (bValue == null) return -1;
+
+            let comparison = 0;
+            if (typeof aValue === "number" && typeof bValue === "number") {
+              comparison = aValue - bValue;
+            } else {
+              comparison = String(aValue).localeCompare(String(bValue));
+            }
+
+            return params.sort!.direction === "desc" ? -comparison : comparison;
+          });
+        }
+
+        return {
+          ok: true,
+          data: {
+            data: filteredData,
+            total: 1000, // Use a large number for total
+          },
+        } as const;
+      }
+
+      // First load - fetch new data
+      return fetchPokemonWithPagination(params);
+    },
+    [pokemonData, forceUpdateCounter, fetchPokemonWithPagination],
+  );
+
+  // Define columns for the Pokemon table with loading states
   const pokemonColumns: TableColumn<Pokemon>[] = [
     {
       key: "id",
@@ -237,6 +384,7 @@ export const PokemonRowSuspenseExample = () => {
       sortable: true,
       width: 60,
       render: (value, row) => {
+        console.log("row", row);
         if (row.isLoading) {
           return (
             <div
@@ -538,12 +686,6 @@ export const PokemonRowSuspenseExample = () => {
     },
   ];
 
-  const handleRefresh = () => {
-    // Clear cache and force re-render
-    pokemonRowCache.clear();
-    setKey((prev) => prev + 1);
-  };
-
   const handleRowClick = (pokemon: Pokemon) => {
     if (pokemon.isLoading) {
       return; // Don't show alert for loading rows
@@ -557,15 +699,12 @@ Speed: ${pokemon.stats.speed}
 Types: ${pokemon.types.join(", ")}`);
   };
 
-  // Handle page changes from Table component
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
-
-  // Handle page size changes from Table component
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page
+  const handleRefresh = () => {
+    // Clear cache to force fresh data
+    pokemonCache.clear();
+    setPokemonData([]);
+    currentPageDataRef.current = [];
+    setForceUpdateCounter(forceUpdateCounter + 1);
   };
 
   return (
@@ -590,7 +729,7 @@ Types: ${pokemon.types.join(", ")}`);
             cursor: "pointer",
           }}
         >
-          🔄 Refresh Current Page
+          🗑️ Clear Cache
         </button>
 
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -601,10 +740,6 @@ Types: ${pokemon.types.join(", ")}`);
           />
           ✨ Show Shiny Sprites
         </label>
-
-        <div style={{ fontSize: "14px", color: "#666" }}>
-          Total Pokemon: {totalCount.toLocaleString()}
-        </div>
       </div>
 
       <div
@@ -617,109 +752,33 @@ Types: ${pokemon.types.join(", ")}`);
           fontSize: "14px",
         }}
       >
-        <strong>🎭 PokeAPI Pagination with Row-Level Suspense:</strong> This now
-        uses the PokeAPI's official pagination system! Navigate through all{" "}
-        {totalCount.toLocaleString()} Pokemon using the pagination controls.
-        Each Pokemon loads individually with skeleton loading states. The Table
-        component handles pagination seamlessly with the PokeAPI's offset/limit
-        system.
+        <strong>🎭 AsyncTable with Row-Level Loading:</strong> This example
+        combines AsyncTable with individual row loading states! The table first
+        displays skeleton rows, then each Pokemon loads individually with
+        staggered timing. You can see each row transform from skeleton to actual
+        data as it loads from the PokeAPI. Search and pagination work while rows
+        are still loading!
       </div>
 
-      <Table
+      <AsyncTable
+        key={forceUpdateCounter} // Force re-render when data updates
         config={{
+          fetchData: fetchPokemonDataForTable,
           columns: pokemonColumns,
-          data: pokemonData,
-          sortable: true,
           pagination: {
+            pageSize: 10,
             enabled: true,
-            pageSize: pageSize,
-          },
-          filtering: {
-            enabled: true, // Enable filtering - you can search while loading!
           },
         }}
         className="pokemon-table"
         onRowClick={handleRowClick}
       />
 
-      {/* Custom pagination controls that sync with PokeAPI */}
-      <div
-        style={{
-          marginTop: "1rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0.75rem",
-          backgroundColor: "#f8f9fa",
-          borderRadius: "8px",
-          fontSize: "14px",
-        }}
-      >
-        <div>
-          Page {currentPage} of {Math.ceil(totalCount / pageSize)} •{" "}
-          {totalCount.toLocaleString()} total Pokemon
-        </div>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage <= 1 || loading}
-            style={{
-              padding: "0.25rem 0.75rem",
-              backgroundColor:
-                currentPage <= 1 || loading ? "#e5e5e5" : "#3b82f6",
-              color: currentPage <= 1 || loading ? "#999" : "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: currentPage <= 1 || loading ? "not-allowed" : "pointer",
-            }}
-          >
-            Previous
-          </button>
-          <select
-            value={pageSize}
-            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-            disabled={loading}
-            style={{
-              padding: "0.25rem 0.5rem",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              backgroundColor: loading ? "#f5f5f5" : "white",
-            }}
-          >
-            <option value={5}>5 per page</option>
-            <option value={10}>10 per page</option>
-            <option value={20}>20 per page</option>
-            <option value={50}>50 per page</option>
-          </select>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={
-              currentPage >= Math.ceil(totalCount / pageSize) || loading
-            }
-            style={{
-              padding: "0.25rem 0.75rem",
-              backgroundColor:
-                currentPage >= Math.ceil(totalCount / pageSize) || loading
-                  ? "#e5e5e5"
-                  : "#3b82f6",
-              color:
-                currentPage >= Math.ceil(totalCount / pageSize) || loading
-                  ? "#999"
-                  : "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor:
-                currentPage >= Math.ceil(totalCount / pageSize) || loading
-                  ? "not-allowed"
-                  : "pointer",
-            }}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-
       <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
