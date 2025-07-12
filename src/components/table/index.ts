@@ -2,6 +2,7 @@ export { Table } from "./table";
 export { useTable } from "./use-table";
 export { useAsyncTable } from "./use-async-table";
 export { useSimpleAsyncTable } from "./use-simple-async-table";
+export { createColumnHelper, createTableColumn } from "./helpers";
 export type {
   TableColumn,
   TableSort,
@@ -11,3 +12,4 @@ export type {
   TableActions,
   UseTableReturn,
 } from "./types";
+export type { ColumnHelper } from "./helpers";
