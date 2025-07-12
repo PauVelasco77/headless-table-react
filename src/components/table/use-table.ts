@@ -58,6 +58,19 @@ export const useTable = <TData extends object>(
   const [loading, setLoading] = useState(false);
 
   /**
+   * Process columns to apply global sortable configuration
+   * When config.sortable is true, all columns are sortable by default unless explicitly set to false
+   */
+  const processedColumns = useMemo(() => {
+    return config.columns.map((column) => ({
+      ...column,
+      sortable: config.sortable
+        ? column.sortable !== false // If global sortable is true, column is sortable unless explicitly false
+        : column.sortable === true, // If global sortable is false/undefined, column is only sortable if explicitly true
+    }));
+  }, [config.columns, config.sortable]);
+
+  /**
    * Filters data based on search query across searchable columns with deep key support
    * Performs case-insensitive string matching on specified or all columns
    */
@@ -68,11 +81,11 @@ export const useTable = <TData extends object>(
 
     const searchableColumns =
       config.filtering.searchableColumns ??
-      config.columns.map((col) => col.key);
+      processedColumns.map((col) => col.key);
 
     return config.data.filter((row) =>
       searchableColumns.some((columnKey) => {
-        const column = config.columns.find((col) => col.key === columnKey);
+        const column = processedColumns.find((col) => col.key === columnKey);
         if (!column) return false;
 
         let value: unknown;
@@ -88,7 +101,7 @@ export const useTable = <TData extends object>(
           .includes(searchQuery.toLowerCase());
       }),
     );
-  }, [config.data, config.columns, config.filtering, searchQuery]);
+  }, [config.data, processedColumns, config.filtering, searchQuery]);
 
   /**
    * Sorts the filtered data based on current sort configuration with enhanced type handling
@@ -97,7 +110,7 @@ export const useTable = <TData extends object>(
   const sortedData = useMemo(() => {
     if (!sort) return filteredData;
 
-    const column = config.columns.find((col) => col.key === sort.key);
+    const column = processedColumns.find((col) => col.key === sort.key);
     if (!column) return filteredData;
 
     return [...filteredData].sort((a, b) => {
@@ -134,7 +147,7 @@ export const useTable = <TData extends object>(
 
       return sort.direction === "desc" ? -comparison : comparison;
     });
-  }, [filteredData, sort, config.columns]);
+  }, [filteredData, sort, processedColumns]);
 
   /**
    * Calculates pagination state based on sorted data and current page settings
@@ -243,6 +256,6 @@ export const useTable = <TData extends object>(
   return {
     state,
     actions,
-    columns: config.columns,
+    columns: processedColumns,
   };
 };
