@@ -1,7 +1,6 @@
 import React from "react";
-import type { TableConfig, DeepKeys } from "./types";
+import type { DeepKeys, TableColumn, TableState, TableActions } from "./types";
 import { getNestedValue } from "./types";
-import { useTable } from "./use-table";
 
 /**
  * Props for the Table component
@@ -9,8 +8,6 @@ import { useTable } from "./use-table";
  * @template TData - The type of data objects in the table rows
  */
 interface TableProps<TData extends object> {
-  /** Table configuration including columns, data, and feature settings */
-  config: TableConfig<TData>;
   /** Additional CSS class names to apply to the table container */
   className?: string;
   /**
@@ -18,6 +15,18 @@ interface TableProps<TData extends object> {
    * @param row - The complete data object for the clicked row
    */
   onRowClick?: (row: TData) => void;
+  /**
+   * Columns to display in the table
+   */
+  columns: TableColumn<TData>[];
+  /**
+   * Actions to perform on the table
+   */
+  actions: TableActions;
+  /**
+   * State of the table
+   */
+  state: TableState<TData>;
 }
 
 /**
@@ -78,19 +87,19 @@ interface TableProps<TData extends object> {
  * ```
  */
 export function Table<TData extends object>({
-  config,
+  columns,
+  actions,
+  state,
   className = "",
   onRowClick,
 }: TableProps<TData>) {
-  const { state, actions, columns } = useTable(config);
-
   /**
    * Handles column header clicks for sorting
    * @param columnKey - The key of the column to sort by
    */
   const handleSort = (columnKey: string): void => {
     const column = columns.find((col) => col.key === columnKey);
-    if (!column?.sortable && config.sortable !== true) return;
+    if (!column?.sortable && !!state.sort) return;
 
     const newDirection =
       state.sort?.key === columnKey && state.sort.direction === "asc"
@@ -158,17 +167,15 @@ export function Table<TData extends object>({
   return (
     <div className={`table-container ${className}`}>
       {/* Search Input */}
-      {config.filtering?.enabled && (
-        <div className="table-search">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={state.searchQuery}
-            onChange={(e) => actions.setSearchQuery(e.target.value)}
-            className="table-search-input"
-          />
-        </div>
-      )}
+      <div className="table-search">
+        <input
+          type="text"
+          placeholder="Search..."
+          value={state.searchQuery}
+          onChange={(e) => actions.setSearchQuery(e.target.value)}
+          className="table-search-input"
+        />
+      </div>
 
       {/* Loading State */}
       {state.loading && <div className="table-loading">Loading...</div>}
@@ -182,7 +189,7 @@ export function Table<TData extends object>({
                 key={String(column.key)}
                 style={{ width: column.width }}
                 className={`table-header ${
-                  column.sortable || config.sortable ? "sortable" : ""
+                  column.sortable || !!state.sort ? "sortable" : ""
                 }`}
                 onClick={() => handleSort(String(column.key))}
               >

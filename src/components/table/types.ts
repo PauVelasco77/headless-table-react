@@ -36,7 +36,12 @@ export interface TableColumn<
    * - Use function for computed values: (row) => row.firstName + ' ' + row.lastName
    */
   accessor: TKey | ((row: TData) => unknown);
-  /** Whether this column can be sorted (defaults to false) */
+  /**
+   * Whether this column can be sorted
+   * - If not specified, inherits from the global sortable setting
+   * - If global sortable is true, column is sortable unless explicitly set to false
+   * - If global sortable is false/undefined, column is only sortable if explicitly set to true
+   */
   sortable?: boolean;
   /** Fixed width for the column (CSS width value or number for pixels) */
   width?: string | number;
@@ -87,7 +92,11 @@ export interface TableConfig<TData> {
   columns: TableColumn<TData>[];
   /** Array of data objects to display in the table */
   data: TData[];
-  /** Enable sorting for all columns (can be overridden per column) */
+  /**
+   * Enable sorting for all columns globally
+   * - When true: all columns are sortable by default unless explicitly set to false
+   * - When false/undefined: only columns with sortable=true are sortable
+   */
   sortable?: boolean;
   /** Pagination configuration */
   pagination?: {
