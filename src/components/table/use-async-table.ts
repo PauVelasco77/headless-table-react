@@ -157,7 +157,7 @@ export const useAsyncTable = <TData extends object>(
   const tableConfig: TableConfig<TData> = {
     columns: config.columns,
     data: serverData,
-    sortable: true,
+    sortable: config.sortable,
     pagination: {
       enabled: true,
       pageSize: config.pagination?.pageSize ?? 10,
