@@ -1,3 +1,4 @@
+import React from "react";
 import type { TableActions, TableState } from "../table";
 
 /**
@@ -92,8 +93,25 @@ export function SearchWrapper({
   className = "",
   style,
 }: SearchWrapperProps) {
+  // Check if children include SearchIcon or SearchClear components
+  const hasIcon = React.Children.toArray(children).some(
+    (child) => React.isValidElement(child) && child.type === SearchIcon,
+  );
+  const hasClear = React.Children.toArray(children).some(
+    (child) => React.isValidElement(child) && child.type === SearchClear,
+  );
+
+  const wrapperClasses = [
+    "search-wrapper",
+    hasIcon && "has-icon",
+    hasClear && "has-clear",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`search-wrapper ${className}`} style={style}>
+    <div className={wrapperClasses} style={style}>
       {children}
     </div>
   );
