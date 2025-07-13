@@ -261,17 +261,7 @@ export const DataTable = <TData extends object>({
 
       {/* Pagination */}
       {showPagination && state.pagination && totalPages > 1 && (
-        <div
-          className="pagination-wrapper"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: "1rem",
-            gap: "1rem",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="table-pagination">
           {/* Pagination Info */}
           {showPaginationInfo && (
             <PaginationInfo
@@ -281,20 +271,19 @@ export const DataTable = <TData extends object>({
             />
           )}
 
-          <div
-            className="pagination-controls"
-            style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-          >
+          <div className="pagination-controls">
             {/* Page Size Selector */}
             {showPageSizeSelector && (
-              <PaginationSelect
-                value={state.pagination.pageSize}
-                onValueChange={(newPageSize) => {
-                  actions.setPageSize(newPageSize);
-                  actions.setPage(1); // Reset to first page when changing page size
-                }}
-                options={pageSizeOptions}
-              />
+              <div style={{ marginBottom: "0.5rem" }}>
+                <PaginationSelect
+                  value={state.pagination.pageSize}
+                  onValueChange={(newPageSize) => {
+                    actions.setPageSize(newPageSize);
+                    actions.setPage(1); // Reset to first page when changing page size
+                  }}
+                  options={pageSizeOptions}
+                />
+              </div>
             )}
 
             {/* Pagination Navigation */}
@@ -314,7 +303,7 @@ export const DataTable = <TData extends object>({
                 ).map((page, index) => (
                   <PaginationItem key={index}>
                     {page === "ellipsis" ? (
-                      <span style={{ padding: "8px" }}>...</span>
+                      <span className="pagination-ellipsis">...</span>
                     ) : (
                       <PaginationLink
                         isActive={page === state.pagination!.page}
