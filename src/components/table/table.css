@@ -85,15 +85,9 @@
     font-size: 0.875rem;
   }
 
-  /* Stack pagination elements on mobile */
-  .data-table-container .pagination-wrapper {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .data-table-container .pagination-controls {
-    justify-content: center;
+  /* Improve data table mobile layout */
+  .data-table-container {
+    padding: 0.5rem;
   }
 }
 
