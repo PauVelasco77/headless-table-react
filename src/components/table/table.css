@@ -72,5 +72,40 @@
 @media (max-width: 768px) {
   .table-container {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 600px; /* Prevent table from becoming too narrow */
+  }
+
+  .table-header,
+  .table-cell {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* Stack pagination elements on mobile */
+  .data-table-container .pagination-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .data-table-container .pagination-controls {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .table-header,
+  .table-cell {
+    padding: 0.375rem;
+    font-size: 0.8rem;
+  }
+
+  /* Hide less important columns on very small screens */
+  .table .hide-mobile {
+    display: none;
   }
 }
