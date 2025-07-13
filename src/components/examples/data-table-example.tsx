@@ -104,16 +104,32 @@ export const DataTableExample: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>DataTable Component Example</h2>
+    <div style={{ padding: "clamp(1rem, 2vw, 20px)" }}>
+      <h2 style={{ fontSize: "clamp(1.25rem, 3vw, 1.5rem)" }}>
+        DataTable Component Example
+      </h2>
 
-      <p style={{ marginBottom: "20px", color: "#6b7280" }}>
+      <p
+        style={{
+          marginBottom: "20px",
+          color: "#6b7280",
+          fontSize: "clamp(0.875rem, 2vw, 1rem)",
+          lineHeight: "1.6",
+        }}
+      >
         This example shows how easy it is to create a complete table with just
         the <code>DataTable</code> component, <code>useTable</code> hook, and{" "}
         <code>createColumnHelper</code>. Everything is built-in:
       </p>
 
-      <ul style={{ marginBottom: "20px", color: "#6b7280" }}>
+      <ul
+        style={{
+          marginBottom: "20px",
+          color: "#6b7280",
+          fontSize: "clamp(0.875rem, 2vw, 1rem)",
+          lineHeight: "1.6",
+        }}
+      >
         <li>✅ Search input with real-time filtering</li>
         <li>✅ Sortable columns with visual indicators</li>
         <li>✅ Pagination with page navigation and size selection</li>
@@ -129,17 +145,25 @@ export const DataTableExample: React.FC = () => {
         className="custom-data-table"
       />
 
-      <div style={{ marginTop: "20px", fontSize: "0.875rem", color: "#666" }}>
+      <div
+        style={{
+          marginTop: "20px",
+          fontSize: "clamp(0.75rem, 1.5vw, 0.875rem)",
+          color: "#666",
+        }}
+      >
         <p>
           <strong>Code required:</strong>
         </p>
         <pre
           style={{
             backgroundColor: "#f5f5f5",
-            padding: "12px",
+            padding: "clamp(8px, 2vw, 12px)",
             borderRadius: "4px",
-            fontSize: "0.8rem",
+            fontSize: "clamp(0.7rem, 1.5vw, 0.8rem)",
             overflow: "auto",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
           }}
         >
           {`// 1. Define columns with columnHelper

@@ -169,8 +169,10 @@ export const UsersTableExample: React.FC = () => {
   });
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Users Table Example with Column Helper</h2>
+    <div style={{ padding: "clamp(1rem, 2vw, 20px)" }}>
+      <h2 style={{ fontSize: "clamp(1.25rem, 3vw, 1.5rem)" }}>
+        Users Table Example with Column Helper
+      </h2>
       <p>
         This example demonstrates using the <code>createColumnHelper</code>{" "}
         function to create type-safe columns with various accessor types and

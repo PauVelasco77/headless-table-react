@@ -12,10 +12,17 @@ import { TableUsageGuide } from "./components/examples/table-usage-guide";
 
 const App = () => {
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem" }}>
-      <h1>React Table Components</h1>
+    <div className="app-container">
+      <h1 style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)" }}>
+        React Table Components
+      </h1>
       <p
-        style={{ fontSize: "1.125rem", marginBottom: "2rem", color: "#6b7280" }}
+        style={{
+          fontSize: "clamp(1rem, 2.5vw, 1.125rem)",
+          marginBottom: "2rem",
+          color: "#6b7280",
+          lineHeight: "1.6",
+        }}
       >
         Composable table components built with React. Build flexible, accessible
         tables with full control over styling and behavior.
