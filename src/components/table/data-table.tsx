@@ -262,6 +262,7 @@ export const DataTable = <TData extends object>({
       {/* Pagination */}
       {showPagination && state.pagination && totalPages > 1 && (
         <div
+          className="pagination-wrapper"
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -280,7 +281,10 @@ export const DataTable = <TData extends object>({
             />
           )}
 
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div
+            className="pagination-controls"
+            style={{ display: "flex", alignItems: "center", gap: "1rem" }}
+          >
             {/* Page Size Selector */}
             {showPageSizeSelector && (
               <PaginationSelect
